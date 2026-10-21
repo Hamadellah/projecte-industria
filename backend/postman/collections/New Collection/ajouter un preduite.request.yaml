@@ -1,4 +1,63 @@
 $kind: http-request
-url: ""
-method: GET
+url: http://127.0.0.1:8000/api/admin/products
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \    \"category_id\": 1,\r
+
+    \    \"name\": \"Compresseur d'air 50L\",\r
+
+    \    \"reference\": \"IND-COMP-050\",\r
+
+    \    \"slug\": \"compresseur-dair-50l\",\r
+
+    \    \"description\": \"Compresseur puissant pour atelier industriel.\",\r
+
+    \    \"price\": 3200.00,\r
+
+    \    \"stock_quantity\": 10,\r
+
+    \    \"is_active\": true,\r
+
+    \    \"images\": [\r
+
+    \        {\r
+
+    \            \"image_path\": \"products/compresseur-1.jpg\",\r
+
+    \            \"is_main\": true,\r
+
+    \            \"position\": 1\r
+
+    \        }\r
+
+    \    ],\r
+
+    \    \"specifications\": [\r
+
+    \        {\r
+
+    \            \"name\": \"Capacité\",\r
+
+    \            \"value\": \"50 Litres\"\r
+
+    \        },\r
+
+    \        {\r
+
+    \            \"name\": \"Pression max\",\r
+
+    \            \"value\": \"8 bar\"\r
+
+    \        }\r
+
+    \    ]\r
+
+    }"
+auth:
+  type: bearer
+  credentials:
+    token: 1|ebdL8uDuHozbWAtHI4cnDxoxkZrPnYF0n2Ui3WT028d048e1
 order: 4000

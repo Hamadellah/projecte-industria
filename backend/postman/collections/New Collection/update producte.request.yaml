@@ -1,0 +1,21 @@
+$kind: http-request
+url: http://127.0.0.1:8000/api/admin/products/3
+method: PUT
+body:
+  type: json
+  content: "{\r
+
+    \    \"name\": \"Compresseur d'air 50L (Mise à jour)\",\r
+
+    \    \"price\": 3400.00,\r
+
+    \    \"stock_quantity\": 15,\r
+
+    \    \"is_active\": true\r
+
+    }"
+auth:
+  type: bearer
+  credentials:
+    token: 1|ebdL8uDuHozbWAtHI4cnDxoxkZrPnYF0n2Ui3WT028d048e1
+order: 6000
