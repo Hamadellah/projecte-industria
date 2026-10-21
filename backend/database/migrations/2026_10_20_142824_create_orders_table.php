@@ -12,7 +12,9 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->string('order_number', 100)->unique();
-            $table->string('status', 50);
+            
+            $table->enum('status', ['pending', 'processing', 'shipped', 'delivered', 'cancelled'])->default('pending');
+            
             $table->decimal('subtotal', 10, 2);
             $table->decimal('delivery_fee', 10, 2);
             $table->decimal('total', 10, 2);
