@@ -85,6 +85,38 @@ class CartController extends Controller
             'cart_item' => $item->load('product'),
         ], 201);
     }
+    public function update(Request $request, CartItem $item)
+{
+    $validated = $request->validate([
+        'quantity' => ['required', 'integer', 'min:1'],
+    ]);
+
+    $cart = $this->getCart($request);
+
+    if ($item->cart_id !== $cart->id) {
+        return response()->json([
+            'message' => 'Cart item not found.',
+        ], 404);
+    }
+
+    $product = Product::findOrFail($item->product_id);
+
+    if ($validated['quantity'] > $product->stock_quantity) {
+        return response()->json([
+            'message' => 'Not enough stock available.',
+            'available_stock' => $product->stock_quantity,
+        ], 422);
+    }
+
+    $item->update([
+        'quantity' => $validated['quantity'],
+    ]);
+
+    return response()->json([
+        'message' => 'Quantity updated successfully.',
+        'cart_item' => $item->load('product'),
+    ]);
+}
 
     public function destroy(Request $request, CartItem $item)
     {
@@ -102,4 +134,14 @@ class CartController extends Controller
             'message' => 'Product removed from cart successfully.',
         ]);
     }
+    public function clear(Request $request)
+{
+    $cart = $this->getCart($request);
+
+    $cart->cartItems()->delete();
+
+    return response()->json([
+        'message' => 'Cart cleared successfully.',
+    ]);
+}
 }
