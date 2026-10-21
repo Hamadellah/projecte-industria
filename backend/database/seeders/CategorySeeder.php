@@ -2,64 +2,46 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Support\Facades\DB;
+use App\Models\Category;
+use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
-class ProductSeeder extends Seeder
+class CategorySeeder extends Seeder
 {
     public function run(): void
     {
-        $products = [
+        $categories = [
             [
-                'name' => 'Submersible Water Pump',
-                'category_id' => 1,
-                'description' => 'Powerful pump for extracting water from wells.',
-                'price' => 2500,
-                'stock' => 15,
+                'name' => 'Pumps',
+                'image' => 'images/categories/pumps.jpg',
+                'description' => 'Water pumps and pumping equipment for wells and drilling sites.',
             ],
             [
-                'name' => 'PVC Well Casing Pipe',
-                'category_id' => 3,
-                'description' => 'Durable PVC pipe for well construction.',
-                'price' => 180,
-                'stock' => 100,
+                'name' => 'Drilling Equipment',
+                'image' => 'images/categories/drilling-equipment.jpg',
+                'description' => 'Equipment and tools used for drilling and well construction.',
             ],
             [
-                'name' => 'Diamond Drill Bit',
-                'category_id' => 1,
-                'description' => 'High-quality drill bit for well drilling.',
-                'price' => 850,
-                'stock' => 20,
+                'name' => 'Pipes and Fittings',
+                'image' => 'images/categories/pipes-and-fittings.jpg',
+                'description' => 'Pipes, connectors and fittings for water and drilling installations.',
             ],
             [
-                'name' => 'Safety Helmet',
-                'category_id' => 4,
-                'description' => 'Protective helmet for drilling workers.',
-                'price' => 150,
-                'stock' => 40,
+                'name' => 'Safety Equipment',
+                'image' => 'images/categories/safety-equipment.jpg',
+                'description' => 'Personal protective equipment for drilling and construction workers.',
             ],
             [
-                'name' => 'Steel Pipe Connector',
-                'category_id' => 5,
-                'description' => 'Strong connector for drilling pipes.',
-                'price' => 95,
-                'stock' => 60,
+                'name' => 'Accessories',
+                'image' => 'images/categories/accessories.jpg',
+                'description' => 'Useful accessories and replacement parts for drilling equipment.',
             ],
         ];
 
-        foreach ($products as $product) {
-            DB::table('products')->updateOrInsert(
-                ['slug' => Str::slug($product['name'])],
-                [
-                    'category_id' => $product['category_id'],
-                    'name' => $product['name'],
-                    'slug' => Str::slug($product['name']),
-                    'description' => $product['description'],
-                    'price' => $product['price'],
-                    'stock' => $product['stock'],
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]
+        foreach ($categories as $category) {
+            Category::updateOrCreate(
+                ['slug' => Str::slug($category['name'])],
+                $category + ['slug' => Str::slug($category['name'])]
             );
         }
     }
