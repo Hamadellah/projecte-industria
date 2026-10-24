@@ -5,7 +5,9 @@ use App\Http\Controllers\Admin\AdminOrderController;
 use App\Http\Controllers\Admin\AdminProductController; 
 use App\Http\Controllers\Admin\AdminUserController; 
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\RegisterController;
 
+Route::post('/register', [RegisterController::class, 'register']);
 Route::post('/login', [LoginController::class, 'login']);
 
 Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
