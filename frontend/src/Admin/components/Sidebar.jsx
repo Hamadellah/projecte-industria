@@ -1,6 +1,5 @@
 
 import { LayoutDashboard, Package, ShoppingCart, Warehouse, Users, Drill } from 'lucide-react'
-
 const menuItems = [
   { id: 'overview', label: 'Vue générale', icon: LayoutDashboard },
   { id: 'products', label: 'Produits', icon: Package },
