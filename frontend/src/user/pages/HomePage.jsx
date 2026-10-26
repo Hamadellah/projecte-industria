@@ -2,6 +2,7 @@ import Header from "../components/Header";
 import Hero from "../components/Hero";
 import Benefits from "../components/Benifits";
 import Categories from "../components/cardCategories";
+import FeaturedProducts from "../components/FeaturedProducts";
 function HomePage() {
     return <>
         <Header/>
@@ -9,6 +10,7 @@ function HomePage() {
             <Hero/>
             <Benefits/>
             <Categories/>
+            <FeaturedProducts/>
         </main>
     </>
 }
