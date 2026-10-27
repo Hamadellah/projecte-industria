@@ -1,0 +1,21 @@
+$kind: http-request
+url: http://127.0.0.1:8000/api/admin/categories
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \    \"name\": \"Équipements Électriques\",\r
+
+    \    \"slug\": \"equipements-electriques\",\r
+
+    \    \"description\": \"Matériel et composants électriques pour installations industrielles.\",\r
+
+    \    \"image\": \"categories/electrique.jpg\"\r
+
+    }"
+auth:
+  type: bearer
+  credentials:
+    token: 1|ebdL8uDuHozbWAtHI4cnDxoxkZrPnYF0n2Ui3WT028d048e1
+order: 8000
