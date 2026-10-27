@@ -25,4 +25,4 @@ export const scenes = [
     text: 'Découvrez nos équipements et nos solutions dédiés au forage, conçus pour répondre aux exigences des professionnels.',
     cta: 'Découvrir nos équipements'
   },
-];
+]
