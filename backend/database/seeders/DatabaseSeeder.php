@@ -5,14 +5,11 @@ namespace Database\Seeders;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
     /**
      * Seed the application's database.
      */
@@ -62,11 +59,13 @@ class DatabaseSeeder extends Seeder
             'is_active' => true,
         ]);
 
+        // Images du produit 1
         $product1->productImages()->createMany([
             ['image_path' => 'products/perceuse-1.jpg', 'is_main' => true, 'position' => 1],
             ['image_path' => 'products/perceuse-2.jpg', 'is_main' => false, 'position' => 2],
         ]);
 
+        // Spécifications du produit 1 (Bhal l-exemple li f l-ERD)
         $product1->productSpecifications()->createMany([
             ['name' => 'Puissance', 'value' => '1,5 kW'],
             ['name' => 'Tension', 'value' => '230 V'],
@@ -84,10 +83,12 @@ class DatabaseSeeder extends Seeder
             'is_active' => true,
         ]);
 
+        // Image du produit 2
         $product2->productImages()->createMany([
             ['image_path' => 'products/casque-1.jpg', 'is_main' => true, 'position' => 1],
         ]);
 
+        // Spécifications du produit 2
         $product2->productSpecifications()->createMany([
             ['name' => 'Matière', 'value' => 'Polycarbonate haute densité'],
             ['name' => 'Norme', 'value' => 'EN 397'],
