@@ -13,6 +13,12 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable; // <--- 2. Zid HasApiTokens hna mabin l-traits
 
+use Laravel\Sanctum\HasApiTokens;
+class User extends Authenticatable
+{
+    use HasFactory, Notifiable;
+    use HasApiTokens;
+    
     protected $fillable = [
         'name',
         'email',
