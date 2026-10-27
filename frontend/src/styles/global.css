@@ -1,0 +1,69 @@
+:root {
+  --abyss: #050b18;
+  --navy: #0a1d3c;
+  --steel: #b4c2d3;
+  --volt: #1e6bff;
+}
+
+html { scroll-behavior: auto; background: var(--abyss); }
+body { margin: 0; min-height: 100vh; }
+::selection { background: var(--volt); color: #fff; }
+
+:focus-visible { outline: 2px solid #4d8dff; outline-offset: 3px; border-radius: 2px; }
+
+.display { font-family: 'Barlow Condensed', Impact, 'Arial Narrow', sans-serif; letter-spacing: 0.005em; line-height: 0.92; }
+.hero-title { font-size: clamp(3rem, 9.5vw, 9rem); font-weight: 800; }
+.scene-title { font-size: clamp(2.4rem, 6.6vw, 6rem); font-weight: 800; }
+
+.blueprint {
+  background-color: #07142b;
+  background-image:
+    linear-gradient(rgba(77,141,255,.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(77,141,255,.12) 1px, transparent 1px),
+    radial-gradient(120% 90% at 30% 20%, #16376d 0%, #07142b 70%);
+  background-size: 28px 28px, 28px 28px, 100% 100%;
+}
+
+.btn-volt {
+  display: inline-flex; align-items: center; gap: .6rem;
+  background: var(--volt); color: #fff; font-weight: 600;
+  padding: .85rem 1.5rem; border-radius: 2px;
+  transition: background .2s, transform .2s;
+}
+.btn-volt:hover { background: #4d8dff; }
+.btn-volt:active { transform: translateY(1px); }
+.btn-ghost {
+  display: inline-flex; align-items: center; gap: .6rem;
+  border: 1px solid rgba(180,194,211,.35); color: #e8eef5; font-weight: 500;
+  padding: .85rem 1.5rem; border-radius: 2px; transition: border-color .2s, background .2s;
+}
+.btn-ghost:hover { border-color: #4d8dff; background: rgba(30,107,255,.12); }
+
+/* Hero cinématique */
+.cine-stage { position: relative; width: 100%; height: 100vh; height: 100svh; overflow: hidden; background: radial-gradient(90% 70% at 70% 40%, #0f2b57 0%, #07142b 55%, #050b18 100%); }
+.cine-host { position: absolute; inset: 0; }
+.cine-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.cine-vignette { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, rgba(5,11,24,.85) 0%, rgba(5,11,24,.35) 45%, rgba(5,11,24,0) 70%), linear-gradient(0deg, rgba(5,11,24,.7) 0%, rgba(5,11,24,0) 35%); }
+.cine-panel { position: absolute; left: 0; right: 0; bottom: 0; padding: 0 clamp(1.25rem, 5vw, 5rem) clamp(4rem, 12vh, 8rem); max-width: 62rem; visibility: hidden; opacity: 0; }
+@media (min-width: 900px) { .cine-panel { top: 0; display: flex; flex-direction: column; justify-content: center; padding-bottom: 0; } }
+.cine-panel.is-first { visibility: visible; opacity: 1; }
+
+.cine-progress { position: absolute; right: clamp(.75rem, 2vw, 2rem); top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: .9rem; z-index: 5; }
+.cine-dot { width: 10px; height: 10px; border-radius: 50%; border: 1px solid #7f93aa; background: transparent; transition: background .25s, border-color .25s, transform .25s; }
+.cine-dot.on { background: var(--volt); border-color: var(--volt); transform: scale(1.3); }
+
+.scroll-hint { position: absolute; left: 50%; bottom: 1.5rem; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: .25rem; color: #7f93aa; font-size: .8rem; pointer-events: none; }
+
+@keyframes nudge { 0%,100% { transform: translateY(0) } 50% { transform: translateY(6px) } }
+.nudge { animation: nudge 1.8s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
+}
+
+/* Champs de formulaire */
+.field { width: 100%; background: rgba(10,29,60,.55); border: 1px solid rgba(127,147,170,.35); color: #e8eef5; padding: .8rem 1rem; border-radius: 2px; transition: border-color .2s; }
+.field::placeholder { color: #7f93aa; }
+.field:focus { outline: none; border-color: #4d8dff; box-shadow: 0 0 0 3px rgba(30,107,255,.25); }
+.field[aria-invalid="true"] { border-color: #ff7a7a; }
+.field-error { color: #ff9a9a; font-size: .875rem; margin-top: .35rem; }
