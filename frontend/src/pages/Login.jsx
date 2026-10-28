@@ -1,8 +1,10 @@
-
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, LogIn } from "lucide-react";
 import { apiRequest } from "../services/api";
+
+const inputClass =
+  "w-full rounded-xl border border-steel-700/60 !bg-navy-900 px-4 py-3 !text-white placeholder:!text-steel-500 outline-none transition focus:border-volt-500 focus:ring-2 focus:ring-volt-500/20";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -20,7 +22,10 @@ export default function Login() {
     try {
       const data = await apiRequest("/login", {
         method: "POST",
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({
+          email: email.trim(),
+          password,
+        }),
       });
 
       localStorage.setItem("token", data.access_token);
@@ -29,7 +34,7 @@ export default function Login() {
       if (data.user?.role === "admin") {
         navigate("/admin", { replace: true });
       } else {
-        navigate("/", { replace: true });
+        navigate("/mon-compte", { replace: true });
       }
     } catch (err) {
       setError(err.message || "Email ou mot de passe incorrect.");
@@ -39,41 +44,73 @@ export default function Login() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-100 px-4 py-10">
-      <div className="grid w-full max-w-5xl overflow-hidden rounded-3xl bg-white shadow-xl md:grid-cols-2">
-        <section className="hidden flex-col justify-between bg-[#0A2540] p-10 text-white md:flex">
-          <div>
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#F59E0B] text-[#0A2540]">
-              <LogIn size={25} />
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden !bg-abyss px-4 py-12 sm:px-6">
+      <div className="pointer-events-none absolute -left-32 top-10 h-80 w-80 rounded-full border-[35px] border-volt-500/5" />
+      <div className="pointer-events-none absolute -bottom-40 -right-20 h-96 w-96 rounded-full border-[40px] border-steel-500/5" />
+
+      <div className="relative grid w-full max-w-5xl overflow-hidden border border-steel-700/50 !bg-navy-950 shadow-2xl md:grid-cols-2">
+        <section className="relative hidden flex-col justify-between overflow-hidden !bg-navy-900 p-10 !text-white md:flex">
+          <div className="blueprint absolute inset-0 opacity-40" />
+
+          <div className="relative z-10">
+            <div className="flex h-14 w-14 items-center justify-center border border-volt-500/40 !bg-volt-500/10 !text-volt-400">
+              <LogIn size={27} />
             </div>
-            <h1 className="mt-8 text-3xl font-bold">FORAGE PRO</h1>
-            <p className="mt-4 leading-7 text-slate-300">
-              Retrouvez vos équipements de forage et gérez vos commandes
-              depuis un espace simple et sécurisé.
+
+            <p className="mt-10 text-xs font-bold uppercase tracking-[0.25em] !text-volt-400">
+              INDUSTRIA · Espace client
             </p>
+
+            <h1 className="display mt-4 text-4xl font-bold !text-white">
+              Heureux de vous revoir.
+            </h1>
+
+            <p className="mt-5 max-w-sm leading-7 !text-steel-300">
+              Connectez-vous pour retrouver vos équipements industriels,
+              gérer votre panier et suivre vos commandes.
+            </p>
+
+            <div className="mt-8 h-1 w-20 !bg-volt-500" />
           </div>
-          <p className="text-sm text-slate-400">
-            Votre solution pour le matériel de forage.
+
+          <p className="relative z-10 text-sm !text-steel-500">
+            Votre partenaire en équipements industriels.
           </p>
+
+          <div className="pointer-events-none absolute -bottom-20 -right-20 h-64 w-64 rounded-full border-[25px] border-volt-500/10" />
         </section>
 
-        <section className="p-6 sm:p-10">
-          <Link to="/" className="text-sm font-medium text-slate-500 hover:text-[#0A2540]">
+        <section className="relative z-10 p-6 sm:p-10 lg:p-12">
+          <Link
+            to="/"
+            className="text-sm font-medium !text-steel-400 transition hover:!text-volt-400"
+          >
             ← Retour à la boutique
           </Link>
 
-          <h2 className="mt-8 text-2xl font-bold text-[#0A2540]">
-            Connexion
-          </h2>
-          <p className="mt-2 text-sm text-slate-500">
-            Connectez-vous à votre compte pour continuer.
-          </p>
+          <div className="mt-9">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] !text-volt-400">
+              Bienvenue
+            </p>
+
+            <h2 className="display mt-3 text-3xl font-bold !text-white">
+              Connexion
+            </h2>
+
+            <p className="mt-3 text-sm leading-6 !text-steel-400">
+              Saisissez vos identifiants pour accéder à votre espace client.
+            </p>
+          </div>
 
           <form onSubmit={handleSubmit} className="mt-8 space-y-5">
             <div>
-              <label htmlFor="email" className="mb-2 block text-sm font-medium text-slate-700">
+              <label
+                htmlFor="email"
+                className="mb-2 block text-sm font-medium !text-steel-300"
+              >
                 Adresse e-mail
               </label>
+
               <input
                 id="email"
                 type="email"
@@ -82,14 +119,18 @@ export default function Login() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="exemple@email.com"
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-[#F59E0B] focus:ring-2 focus:ring-amber-100"
+                className={inputClass}
               />
             </div>
 
             <div>
-              <label htmlFor="password" className="mb-2 block text-sm font-medium text-slate-700">
+              <label
+                htmlFor="password"
+                className="mb-2 block text-sm font-medium !text-steel-300"
+              >
                 Mot de passe
               </label>
+
               <div className="relative">
                 <input
                   id="password"
@@ -99,13 +140,18 @@ export default function Login() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Votre mot de passe"
-                  className="w-full rounded-xl border border-slate-300 px-4 py-3 pr-12 outline-none transition focus:border-[#F59E0B] focus:ring-2 focus:ring-amber-100"
+                  className={`${inputClass} pr-12`}
                 />
+
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500"
-                  aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+                  onClick={() => setShowPassword((current) => !current)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 !text-steel-400 transition hover:!text-volt-400"
+                  aria-label={
+                    showPassword
+                      ? "Masquer le mot de passe"
+                      : "Afficher le mot de passe"
+                  }
                 >
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
@@ -113,7 +159,10 @@ export default function Login() {
             </div>
 
             {error && (
-              <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">
+              <p
+                role="alert"
+                className="border border-red-500/30 bg-red-500/10 p-3 text-sm !text-red-300"
+              >
                 {error}
               </p>
             )}
@@ -121,16 +170,19 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#0A2540] px-4 py-3 font-semibold text-white transition hover:bg-[#12385d] disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex w-full items-center justify-center gap-2 !bg-volt-500 px-4 py-3 font-bold !text-navy-950 transition hover:!bg-volt-400 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <LogIn size={18} />
               {loading ? "Connexion..." : "Se connecter"}
             </button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-slate-500">
+          <p className="mt-7 text-center text-sm !text-steel-400">
             Pas encore de compte ?{" "}
-            <Link to="/register" className="font-semibold text-[#0A2540] hover:underline">
+            <Link
+              to="/register"
+              className="font-semibold !text-volt-400 hover:underline"
+            >
               Créer un compte
             </Link>
           </p>
