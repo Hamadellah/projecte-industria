@@ -11,7 +11,7 @@ class ProductSeeder extends Seeder
 {
     public function run(): void
     {
-         $products = [
+        $products = [
             [
                 'name' => 'Submersible Water Pump',
                 'category' => 'Pumps',
@@ -76,7 +76,5 @@ class ProductSeeder extends Seeder
                 ]
             );
         }
-    
-        // Your products seeder code
     }
 }
