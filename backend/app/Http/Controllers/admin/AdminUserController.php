@@ -9,24 +9,39 @@ use Illuminate\Http\Request;
 
 class AdminUserController extends Controller
 {
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $users = User::latest()->paginate(20);
+        $query = User::latest();
 
-        return response()->json($users);
+        if ($request->has('role')) {
+            $query->where('role', $request->role);
+        }
+
+        return response()->json($query->paginate(20));
+    }
+
+    // Ziyada dyal show client b details dyalu w les commandes dyalu
+    public function show(int $id): JsonResponse
+    {
+        $user = User::with(['orders', 'quotations'])->findOrFail($id);
+        return response()->json($user);
     }
 
     public function updateRole(Request $request, int $id): JsonResponse
     {
         $validated = $request->validate([
             'role' => 'required|string|in:customer,admin',
+            'company_name' => 'nullable|string|max:255',
+            'ice' => 'nullable|string|max:50',
+            'address' => 'nullable|string|max:255',
+            'city' => 'nullable|string|max:100',
         ]);
 
         $user = User::findOrFail($id);
-        $user->update(['role' => $validated['role']]);
+        $user->update($validated);
 
         return response()->json([
-            'message' => 'User role updated successfully',
+            'message' => 'User updated successfully',
             'user' => $user
         ]);
     }
@@ -35,7 +50,6 @@ class AdminUserController extends Controller
     {
         $user = User::findOrFail($id);
         
-        // Empêcher l'admin d'effacer son propre compte par erreur
         if ($user->id === request()->user()->id) {
             return response()->json(['message' => 'You cannot delete your own account'], 403);
         }

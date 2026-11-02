@@ -10,19 +10,23 @@ use Illuminate\Support\Facades\DB;
 
 class AdminProductController extends Controller
 {
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $products = Product::with(['category', 'productImages', 'productSpecifications'])
-            ->latest()
-            ->paginate(20);
+        $query = Product::with(['category', 'supplier', 'productImages', 'productSpecifications'])->latest();
 
-        return response()->json($products);
+        // Filtrer b quantity wla status ila t-lbo
+        if ($request->has('stock_min')) {
+            $query->where('stock_quantity', '>=', $request->stock_min);
+        }
+
+        return response()->json($query->paginate(20));
     }
 
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'category_id' => 'required|exists:categories,id',
+            'supplier_id' => 'nullable|exists:suppliers,id', // Ziyadth dyal fournisseur
             'name' => 'required|string|max:150',
             'reference' => 'required|string|max:100|unique:products',
             'slug' => 'required|string|max:150|unique:products',
@@ -50,7 +54,7 @@ class AdminProductController extends Controller
                 $product->productSpecifications()->createMany($validated['specifications']);
             }
 
-            return response()->json($product->load(['productImages', 'productSpecifications']), 201);
+            return response()->json($product->load(['category', 'supplier', 'productImages', 'productSpecifications']), 201);
         });
     }
 
@@ -60,6 +64,7 @@ class AdminProductController extends Controller
 
         $validated = $request->validate([
             'category_id' => 'sometimes|exists:categories,id',
+            'supplier_id' => 'nullable|exists:suppliers,id',
             'name' => 'sometimes|string|max:150',
             'reference' => 'sometimes|string|max:100|unique:products,reference,' . $id,
             'slug' => 'sometimes|string|max:150|unique:products,slug,' . $id,
@@ -71,7 +76,7 @@ class AdminProductController extends Controller
 
         $product->update($validated);
 
-        return response()->json($product);
+        return response()->json($product->load(['category', 'supplier']));
     }
 
     public function destroy(int $id): JsonResponse

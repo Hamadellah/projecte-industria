@@ -1,83 +1,46 @@
 
 <?php
 
-use Illuminate\Support\Facades\Route;
-
-use App\Http\Controllers\CategoryController;
-use App\Http\Controllers\ProductController;
-use App\Http\Controllers\CartController;
-use App\Http\Controllers\OrderController;
-
-use App\Http\Controllers\Auth\LoginController;
-use App\Http\Controllers\Auth\RegisterController;
-
 use App\Http\Controllers\Admin\AdminCategoryController;
 use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\AdminInvoiceController;
 use App\Http\Controllers\Admin\AdminOrderController;
 use App\Http\Controllers\Admin\AdminProductController;
+use App\Http\Controllers\Admin\AdminSupplierController;
 use App\Http\Controllers\Admin\AdminUserController;
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\RegisterController;
+use Illuminate\Support\Facades\Route;
 
-// ==========================
-// AUTHENTICATION
-// ==========================
-
+// Routes Publiques (Authentication)
 Route::post('/register', [RegisterController::class, 'register']);
 Route::post('/login', [LoginController::class, 'login']);
 
-
-// ==========================
-// PUBLIC CATEGORIES
-// ==========================
-
-Route::get('/categories', [CategoryController::class, 'index']);
-
-
-// ==========================
-// PUBLIC PRODUCTS
-// ==========================
-
-Route::get('/products', [ProductController::class, 'index']);
-Route::get('/products/{product}', [ProductController::class, 'show']);
-
-
-// ==========================
-// CUSTOMER CART & ORDERS
-// ==========================
-
-Route::middleware('auth:sanctum')->group(function () {
-
-    // Cart
-    Route::get('/cart', [CartController::class, 'index']);
-    Route::post('/cart', [CartController::class, 'store']);
-    Route::patch('/cart/{item}', [CartController::class, 'update']);
-    Route::delete('/cart/clear', [CartController::class, 'clear']);
-    Route::delete('/cart/{item}', [CartController::class, 'destroy']);
-
-    // Orders
-    Route::post('/orders', [OrderController::class, 'store']);
-
+// Routes Admin (Protected by Sanctum & Admin Middleware)
+Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
+    
+    // Dashboard
+    Route::get('/dashboard', [AdminDashboardController::class, 'index']);
+    
+    // Categories & Products & Suppliers (API Resources)
+    Route::apiResource('categories', AdminCategoryController::class);
+    Route::apiResource('products', AdminProductController::class);
+    Route::apiResource('suppliers', AdminSupplierController::class); // <--- Jdid: Fournisseurs
+    
+    // Orders Management
+    Route::get('/orders', [AdminOrderController::class, 'index']);
+    Route::get('/orders/{id}', [AdminOrderController::class, 'show']);
+    Route::patch('/orders/{id}/status', [AdminOrderController::class, 'updateStatus']);
+    
+    // Invoices Management (Factures)
+    Route::get('/invoices', [AdminInvoiceController::class, 'index']);             // <--- Jdid
+    Route::get('/invoices/{id}', [AdminInvoiceController::class, 'show']);         // <--- Jdid
+    Route::patch('/invoices/{id}/status', [AdminInvoiceController::class, 'updateStatus']); // <--- Jdid
+    
+    // Users & Customers Management (B2B Details)
+    Route::get('/users', [AdminUserController::class, 'index']);
+    Route::get('/users/{id}', [AdminUserController::class, 'show']);               // <--- Jdid: Details client & orders dyalu
+    Route::patch('/users/{id}/role', [AdminUserController::class, 'updateRole']);
+    Route::delete('/users/{id}', [AdminUserController::class, 'destroy']);
+    
 });
-
-
-// ==========================
-// ADMIN
-// ==========================
-
-Route::middleware(['auth:sanctum', 'admin'])
-    ->prefix('admin')
-    ->group(function () {
-
-        Route::get('/dashboard', [AdminDashboardController::class, 'index']);
-
-        Route::apiResource('categories', AdminCategoryController::class);
-        Route::apiResource('products', AdminProductController::class);
-
-        Route::get('/orders', [AdminOrderController::class, 'index']);
-        Route::get('/orders/{id}', [AdminOrderController::class, 'show']);
-        Route::patch('/orders/{id}/status', [AdminOrderController::class, 'updateStatus']);
-
-        Route::get('/users', [AdminUserController::class, 'index']);
-        Route::patch('/users/{id}/role', [AdminUserController::class, 'updateRole']);
-        Route::delete('/users/{id}', [AdminUserController::class, 'destroy']);
-
-    });
