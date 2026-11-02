@@ -1,16 +1,16 @@
-# React + Vite
+# INDUSTRIA — Front-end cinématique
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React + Vite, Three.js (machine de forage procédurale), GSAP ScrollTrigger, React Router, Lucide.
+Tailwind CSS est chargé par CDN dans `index.html` (aucune configuration PostCSS).
 
-Currently, two official plugins are available:
+## Lancer
+    npm install
+    npm run dev       # http://localhost:5173
+    npm run build     # production -> dist/
+    npm run preview
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+## Notes
+- Machine 3D générée par code (`src/3d/drillScene.js`) : aucun modèle externe, donc aucune licence tierce.
+- Produits, prix, stocks : données de démonstration (`src/data/products.js`). Aucun backend.
+- Les visuels produits sont des illustrations techniques générées (aucune photo n'est fournie).
+- Connexion internet requise pour Tailwind (CDN) et les polices Google Fonts.
