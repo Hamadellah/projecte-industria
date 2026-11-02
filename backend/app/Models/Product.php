@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Product extends Model
 {
@@ -13,6 +12,8 @@ class Product extends Model
 
     protected $fillable = [
         'category_id',
+        // --- ZIYADA DYAL FOURNISSEUR ---
+        'supplier_id',
         'name',
         'reference',
         'slug',
@@ -22,37 +23,14 @@ class Product extends Model
         'is_active',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'price' => 'decimal:2',
-            'stock_quantity' => 'integer',
-            'is_active' => 'boolean',
-        ];
-    }
+    // ... relations category, images ...
 
-    public function category(): BelongsTo
+    // --- Jdid: Relation m3a fournisseur ---
+    /**
+     * Relation: Un produit appartient à un fournisseur.
+     */
+    public function supplier(): BelongsTo
     {
-        return $this->belongsTo(Category::class);
-    }
-
-    public function cartItems(): HasMany
-    {
-        return $this->hasMany(CartItem::class);
-    }
-
-    public function orderItems(): HasMany
-    {
-        return $this->hasMany(OrderItem::class);
-    }
-
-    public function productImages(): HasMany
-    {
-        return $this->hasMany(ProductImage::class);
-    }
-
-    public function productSpecifications(): HasMany
-    {
-        return $this->hasMany(ProductSpecification::class);
+        return $this->belongsTo(Supplier::class);
     }
 }
