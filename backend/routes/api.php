@@ -1,4 +1,3 @@
-
 <?php
 
 use App\Http\Controllers\Admin\AdminCategoryController;
@@ -6,6 +5,7 @@ use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminInvoiceController;
 use App\Http\Controllers\Admin\AdminOrderController;
 use App\Http\Controllers\Admin\AdminProductController;
+use App\Http\Controllers\Admin\AdminQuotationController;
 use App\Http\Controllers\Admin\AdminSupplierController;
 use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Auth\LoginController;
@@ -26,10 +26,12 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     // Dashboard
     Route::get('/dashboard', [AdminDashboardController::class, 'index']);
     
-    // Categories & Products & Suppliers (API Resources)
+    // Categories & Products & Suppliers & Quotations (API Resources)
     Route::apiResource('categories', AdminCategoryController::class);
     Route::apiResource('products', AdminProductController::class);
-    Route::apiResource('suppliers', AdminSupplierController::class); // <--- Jdid: Fournisseurs
+    Route::apiResource('suppliers', AdminSupplierController::class);
+    Route::apiResource('quotations', AdminQuotationController::class); // <--- Jdid: Devis
+    Route::patch('/quotations/{id}/status', [AdminQuotationController::class, 'updateStatus']); // <--- Jdid: Status dyal devis
     
     // Orders Management
     Route::get('/orders', [AdminOrderController::class, 'index']);
@@ -37,31 +39,36 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::patch('/orders/{id}/status', [AdminOrderController::class, 'updateStatus']);
     
     // Invoices Management (Factures)
-    Route::get('/invoices', [AdminInvoiceController::class, 'index']);             // <--- Jdid
-    Route::get('/invoices/{id}', [AdminInvoiceController::class, 'show']);         // <--- Jdid
-    Route::patch('/invoices/{id}/status', [AdminInvoiceController::class, 'updateStatus']); // <--- Jdid
+    Route::get('/invoices', [AdminInvoiceController::class, 'index']);             
+    Route::get('/invoices/{id}', [AdminInvoiceController::class, 'show']);         
+    Route::patch('/invoices/{id}/status', [AdminInvoiceController::class, 'updateStatus']); 
     
     // Users & Customers Management (B2B Details)
     Route::get('/users', [AdminUserController::class, 'index']);
-    Route::get('/users/{id}', [AdminUserController::class, 'show']);               // <--- Jdid: Details client & orders dyalu
+    Route::get('/users/{id}', [AdminUserController::class, 'show']);              
     Route::patch('/users/{id}/role', [AdminUserController::class, 'updateRole']);
     Route::delete('/users/{id}', [AdminUserController::class, 'destroy']);
     
 });
+
+// Routes Publiques (Produits)
 Route::get('/products', [ProductController::class, 'index']);
 Route::get('/products/{product}', [ProductController::class, 'show']);
 
+// Routes Protégées (Client / User)
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', [AuthController::class, 'user']);
     Route::post('/logout', [AuthController::class, 'logout']);
+    
+    // Cart Management
     Route::get('/cart', [CartController::class, 'index']);
     Route::post('/cart', [CartController::class, 'store']);
     Route::patch('/cart/{item}', [CartController::class, 'update']);
-     Route::delete('/cart/{item}', [CartController::class, 'destroy']);
-     Route::delete('/cart', [CartController::class, 'clear']);
+    Route::delete('/cart/{item}', [CartController::class, 'destroy']);
+    Route::delete('/cart', [CartController::class, 'clear']);
 
-     Route::post('/orders', [OrderController::class, 'store']);
+    // Orders Management (Client)
+    Route::post('/orders', [OrderController::class, 'store']);
     Route::get('/orders', [OrderController::class, 'index']);
     Route::get('/orders/{id}', [OrderController::class, 'show']);
 });
-
