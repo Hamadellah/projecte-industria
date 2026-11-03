@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { LogOut } from "lucide-react";
@@ -8,7 +9,9 @@ const pageInfo = {
   "/admin": { id: "overview", title: "Vue générale" },
   "/admin/products": { id: "products", title: "Produits" },
   "/admin/categories": { id: "categories", title: "Catégories" },
+  "/admin/suppliers": { id: "suppliers", title: "Fournisseurs" },
   "/admin/orders": { id: "orders", title: "Commandes" },
+  "/admin/invoices": { id: "invoices", title: "Factures" },
   "/admin/inventory": { id: "inventory", title: "Gestion de stock" },
   "/admin/clients": { id: "clients", title: "Clients" },
 };
@@ -40,7 +43,9 @@ export default function AdminLayout() {
       overview: "/admin",
       products: "/admin/products",
       categories: "/admin/categories",
+      suppliers: "/admin/suppliers",
       orders: "/admin/orders",
+      invoices: "/admin/invoices",
       inventory: "/admin/inventory",
       clients: "/admin/clients",
     };
@@ -52,36 +57,17 @@ export default function AdminLayout() {
 
   return (
     <div className="min-h-screen bg-[#F4F6F8]">
-      <Sidebar
-        activePage={currentPage.id}
-        onNavigate={handleNavigate}
-        isOpen={isOpen}
-        onClose={() => setIsOpen(false)}
-      />
+      <Sidebar activePage={currentPage.id} onNavigate={handleNavigate} isOpen={isOpen} onClose={() => setIsOpen(false)} />
 
       <div className="min-h-screen lg:pl-64">
-        <Header
-          title={currentPage.title}
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          onMenuClick={() => setIsOpen(true)}
-        />
+        <Header title={currentPage.title} searchQuery={searchQuery} setSearchQuery={setSearchQuery} onMenuClick={() => setIsOpen(true)} />
 
         <div className="flex min-h-14 items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 sm:px-6 lg:px-8">
-          <p className="truncate text-xs text-slate-500">
-            Espace d'administration
-          </p>
+          <p className="truncate text-xs text-slate-500">Espace d'administration</p>
 
           <div className="flex items-center gap-3">
-            <span className="hidden max-w-40 truncate text-sm font-medium text-slate-700 sm:block">
-              {user?.name || "Administrateur"}
-            </span>
-
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 sm:text-sm"
-            >
+            <span className="hidden max-w-40 truncate text-sm font-medium text-slate-700 sm:block">{user?.name || "Administrateur"}</span>
+            <button type="button" onClick={handleLogout} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 sm:text-sm">
               <LogOut size={16} />
               Déconnexion
             </button>
