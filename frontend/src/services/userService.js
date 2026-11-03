@@ -1,8 +1,11 @@
-
 import { apiRequest } from "./api";
 
 export function getUsers(page = 1) {
   return apiRequest(`/admin/users?page=${page}`);
+}
+
+export function getUser(id) {
+  return apiRequest(`/admin/users/${id}`);
 }
 
 export function updateUserRole(id, role) {
