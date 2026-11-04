@@ -1,4 +1,3 @@
-
 import { Route, Routes } from "react-router-dom";
 
 import Header from "./components/Header";
@@ -26,6 +25,7 @@ import Clients from "./Admin/pages/Clients";
 import AdminCategories from "./Admin/pages/Categories";
 import Suppliers from "./Admin/pages/Suppliers";
 import Invoices from "./Admin/pages/Invoices";
+import Quotations from "./Admin/pages/Quotations";
 
 function StoreLayout() {
   return (
@@ -68,6 +68,7 @@ export default function App() {
             <Route path="categories" element={<AdminCategories />} />
             <Route path="suppliers" element={<Suppliers />} />
             <Route path="orders" element={<Orders />} />
+            <Route path="quotations" element={<Quotations />} />
             <Route path="invoices" element={<Invoices />} />
             <Route path="inventory" element={<Inventory />} />
             <Route path="clients" element={<Clients />} />

@@ -1,5 +1,4 @@
-﻿
-import {
+﻿import {
   LayoutDashboard,
   Package,
   ShoppingCart,
@@ -9,6 +8,7 @@ import {
   Drill,
   Building2,
   FileText,
+  FileCheck,
 } from "lucide-react";
 
 const menuItems = [
@@ -17,6 +17,7 @@ const menuItems = [
   { id: "categories", label: "Catégories", icon: Tags },
   { id: "suppliers", label: "Fournisseurs", icon: Building2 },
   { id: "orders", label: "Commandes", icon: ShoppingCart },
+  { id: "quotations", label: "Devis", icon: FileCheck },
   { id: "invoices", label: "Factures", icon: FileText },
   { id: "inventory", label: "Gestion de stock", icon: Warehouse },
   { id: "clients", label: "Clients", icon: Users },
@@ -64,7 +65,7 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose }) {
             <span className="h-2 w-2 rounded-full bg-emerald-400" />
             <p className="text-xs font-medium text-slate-200">Système opérationnel</p>
           </div>
-          <p className="mt-2 text-[11px] leading-5 text-slate-400">Gestion centralisée des produits, commandes, fournisseurs et stocks.</p>
+          <p className="mt-2 text-[11px] leading-5 text-slate-400">Gestion centralisée des produits, commandes, devis, factures et stocks.</p>
         </div>
 
         <div className="border-t border-white/10 px-5 py-4">
