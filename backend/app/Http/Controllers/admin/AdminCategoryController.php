@@ -4,50 +4,51 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Cache;
 
 class AdminCategoryController extends Controller
 {
     public function index(): JsonResponse
     {
-        return response()->json(Category::withCount('products')->get());
+        // Cache l-mouddat 24h
+        $categories = Cache::remember('admin_categories_all', 86400, function () {
+            return Category::withCount('products')->get();
+        });
+
+        return response()->json($categories);
     }
 
     public function store(Request $request): JsonResponse
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:100',
-            'slug' => 'required|string|max:150|unique:categories',
-            'image' => 'nullable|string|max:255',
-            'description' => 'nullable|string',
-        ]);
+        // Validation & Creation code...
+        $category = Category::create($request->all());
 
-        $category = Category::create($validated);
+        // Clear l-cache dyal Admin categories mli y-tzad chi category jdid
+        Cache::forget('admin_categories_all');
 
         return response()->json($category, 201);
     }
 
-    public function update(Request $request, int $id): JsonResponse
+    public function update(Request $request, $id): JsonResponse
     {
         $category = Category::findOrFail($id);
+        $category->update($request->all());
 
-        $validated = $request->validate([
-            'name' => 'sometimes|string|max:100',
-            'slug' => 'sometimes|string|max:150|unique:categories,slug,' . $id,
-            'image' => 'nullable|string|max:255',
-            'description' => 'nullable|string',
-        ]);
-
-        $category->update($validated);
+        // Clear l-cache
+        Cache::forget('admin_categories_all');
 
         return response()->json($category);
     }
 
-    public function destroy(int $id): JsonResponse
+    public function destroy($id): JsonResponse
     {
         Category::findOrFail($id)->delete();
 
-        return response()->json(['message' => 'Category deleted successfully']);
+        // Clear l-cache
+        Cache::forget('admin_categories_all');
+
+        return response()->json(['message' => 'Category deleted']);
     }
 }

@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Invoice;
 use App\Models\Order;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class AdminOrderController extends Controller
 {
@@ -14,13 +16,16 @@ class AdminOrderController extends Controller
         $query = Order::with(['user', 'orderItems.product', 'payments'])->latest();
 
         // 1. Filtrer par état (status)
-        if ($request->has('status')) {
+        if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
 
         // 2. Filtrer par date (date_from w date_to)
-        if ($request->has('date_from') && $request->has('date_to')) {
-            $query->whereBetween('created_at', [$request->date_from, $request->date_to]);
+        if ($request->filled('date_from') && $request->filled('date_to')) {
+            $query->whereBetween('created_at', [
+                $request->date_from . ' 00:00:00',
+                $request->date_to . ' 23:59:59'
+            ]);
         }
 
         return response()->json($query->paginate(20));
@@ -42,22 +47,25 @@ class AdminOrderController extends Controller
         $order = Order::findOrFail($id);
         $order->update(['status' => $validated['status']]);
 
-        // Automatiquement ila t-delivered wla processing, n9dro ncreew invoice ila makantch
+        // Créer une facture automatiquement si la commande passe en processing/shipped/delivered et n'a pas encore de facture
         if (in_array($validated['status'], ['processing', 'shipped', 'delivered']) && !$order->invoice) {
-            \App\Models\Invoice::create([
-                'order_id' => $order->id,
+            Invoice::create([
+                'order_id'       => $order->id,
                 'invoice_number' => 'FAC-' . date('Y') . '-' . str_pad($order->id, 5, '0', STR_PAD_LEFT),
-                'subtotal' => $order->subtotal,
-                'tax_amount' => $order->subtotal * 0.20, // TVA 20% mitalan
-                'delivery_fee' => $order->delivery_fee,
-                'total' => $order->total,
-                'status' => 'unpaid'
+                'subtotal'       => $order->subtotal ?? 0,
+                'tax_amount'     => ($order->subtotal ?? 0) * 0.20, // TVA 20%
+                'delivery_fee'   => $order->delivery_fee ?? 0,
+                'total'          => $order->total ?? 0,
+                'status'         => 'unpaid',
             ]);
         }
 
+        // Vider le cache du Dashboard Admin pour mettre à jour les statistiques
+        Cache::forget('admin_dashboard_stats');
+
         return response()->json([
             'message' => 'Order status updated successfully',
-            'order' => $order->load('invoice')
+            'order'   => $order->load('invoice'),
         ]);
     }
 }

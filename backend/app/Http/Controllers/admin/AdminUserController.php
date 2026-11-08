@@ -6,18 +6,28 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class AdminUserController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = User::latest();
+        $page = $request->get('page', 1);
+        $role = $request->get('role', 'all');
+        $cacheKey = "admin_users_page_{$page}_role_{$role}";
 
-        if ($request->has('role')) {
-            $query->where('role', $request->role);
-        }
+        // Cache dyal les utilisateurs l-mouddat 60 minutes
+        $users = Cache::remember($cacheKey, 3600, function () use ($request) {
+            $query = User::latest();
 
-        return response()->json($query->paginate(20));
+            if ($request->filled('role')) {
+                $query->where('role', $request->role);
+            }
+
+            return $query->paginate(20);
+        });
+
+        return response()->json($users);
     }
 
     // Ziyada dyal show client b details dyalu w les commandes dyalu
@@ -30,7 +40,7 @@ class AdminUserController extends Controller
     public function updateRole(Request $request, int $id): JsonResponse
     {
         $validated = $request->validate([
-            'role' => 'required|string|in:customer,admin',
+            'role' => 'required|string|in:customer,admin,supplier',
             'company_name' => 'nullable|string|max:255',
             'ice' => 'nullable|string|max:50',
             'address' => 'nullable|string|max:255',
@@ -39,6 +49,9 @@ class AdminUserController extends Controller
 
         $user = User::findOrFail($id);
         $user->update($validated);
+
+        // Vider l-cache dyal users w dashboard stats
+        $this->clearUserCaches();
 
         return response()->json([
             'message' => 'User updated successfully',
@@ -56,6 +69,18 @@ class AdminUserController extends Controller
 
         $user->delete();
 
+        // Vider l-cache dyal users w dashboard stats
+        $this->clearUserCaches();
+
         return response()->json(['message' => 'User deleted successfully']);
+    }
+
+    /**
+     * Helper function bach t-ms7 cache dyal users w dashboard.
+     */
+    private function clearUserCaches(): void
+    {
+        Cache::forget('admin_dashboard_stats');
+        Cache::flush();
     }
 }

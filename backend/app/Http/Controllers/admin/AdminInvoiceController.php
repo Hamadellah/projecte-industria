@@ -6,18 +6,28 @@ use App\Http\Controllers\Controller;
 use App\Models\Invoice;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class AdminInvoiceController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = Invoice::with(['order.user'])->latest();
+        $page = $request->get('page', 1);
+        $status = $request->get('status', 'all');
+        $cacheKey = "admin_invoices_page_{$page}_status_{$status}";
 
-        if ($request->has('status')) {
-            $query->where('status', $request->status);
-        }
+        // Cache dyal les factures l-mouddat 60 minutes
+        $invoices = Cache::remember($cacheKey, 3600, function () use ($request) {
+            $query = Invoice::with(['order.user'])->latest();
 
-        return response()->json($query->paginate(20));
+            if ($request->filled('status')) {
+                $query->where('status', $request->status);
+            }
+
+            return $query->paginate(20);
+        });
+
+        return response()->json($invoices);
     }
 
     public function show(int $id): JsonResponse
@@ -35,9 +45,21 @@ class AdminInvoiceController extends Controller
         $invoice = Invoice::findOrFail($id);
         $invoice->update(['status' => $validated['status']]);
 
+        // Vider l-cache dyal invoices w dashboard stats
+        $this->clearInvoiceCaches();
+
         return response()->json([
             'message' => 'Invoice status updated successfully',
             'invoice' => $invoice
         ]);
+    }
+
+    /**
+     * Helper function bach t-ms7 cache dyal invoices w dashboard.
+     */
+    private function clearInvoiceCaches(): void
+    {
+        Cache::forget('admin_dashboard_stats');
+        Cache::flush();
     }
 }

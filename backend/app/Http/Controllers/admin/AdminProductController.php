@@ -6,20 +6,30 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class AdminProductController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = Product::with(['category', 'supplier', 'productImages', 'productSpecifications'])->latest();
+        $page = $request->get('page', 1);
+        $stockMin = $request->get('stock_min', 'all');
+        $cacheKey = "admin_products_page_{$page}_stock_{$stockMin}";
 
-        // Filtrer b quantity wla status ila t-lbo
-        if ($request->has('stock_min')) {
-            $query->where('stock_quantity', '>=', $request->stock_min);
-        }
+        // Cache dyal la liste dyal les produits f admin l-mouddat 60 minutes
+        $products = Cache::remember($cacheKey, 3600, function () use ($request) {
+            $query = Product::with(['category', 'supplier', 'productImages', 'productSpecifications'])->latest();
 
-        return response()->json($query->paginate(20));
+            // Filtrer b quantity wla status ila t-lbo
+            if ($request->filled('stock_min')) {
+                $query->where('stock_quantity', '>=', $request->stock_min);
+            }
+
+            return $query->paginate(20);
+        });
+
+        return response()->json($products);
     }
 
     public function store(Request $request): JsonResponse
@@ -43,7 +53,7 @@ class AdminProductController extends Controller
             'specifications.*.value' => 'required|string|max:255',
         ]);
 
-        return DB::transaction(function () use ($validated) {
+        $product = DB::transaction(function () use ($validated) {
             $product = Product::create($validated);
 
             if (! empty($validated['images'])) {
@@ -54,8 +64,13 @@ class AdminProductController extends Controller
                 $product->productSpecifications()->createMany($validated['specifications']);
             }
 
-            return response()->json($product->load(['category', 'supplier', 'productImages', 'productSpecifications']), 201);
+            return $product->load(['category', 'supplier', 'productImages', 'productSpecifications']);
         });
+
+        // Vider l-cache dyal les produits w l-dashboard stats
+        $this->clearProductCaches();
+
+        return response()->json($product, 201);
     }
 
     public function update(Request $request, int $id): JsonResponse
@@ -76,6 +91,9 @@ class AdminProductController extends Controller
 
         $product->update($validated);
 
+        // Vider l-cache dyal les produits w l-dashboard stats
+        $this->clearProductCaches();
+
         return response()->json($product->load(['category', 'supplier']));
     }
 
@@ -83,6 +101,21 @@ class AdminProductController extends Controller
     {
         Product::findOrFail($id)->delete();
 
+        // Vider l-cache dyal les produits w l-dashboard stats
+        $this->clearProductCaches();
+
         return response()->json(['message' => 'Product deleted successfully']);
+    }
+
+    /**
+     * Helper function bach t-ms7 ga3 l-cache li m-rbtab b products w dashboard stats.
+     */
+    private function clearProductCaches(): void
+    {
+        Cache::forget('admin_dashboard_stats');
+        
+        // 7it les pages kit-savaw b keys mokhtalifin, tqdr t-st3ml wildcard wla t-flushar cache files ila knti kat-st3ml file driver, 
+        // Wla t-dir Artisan::call('cache:clear'); (Wla ghir Cache::flush();)
+        Cache::flush(); 
     }
 }
