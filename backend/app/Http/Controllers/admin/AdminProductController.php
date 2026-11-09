@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class AdminProductController extends Controller
 {
@@ -36,7 +37,7 @@ class AdminProductController extends Controller
     {
         $validated = $request->validate([
             'category_id' => 'required|exists:categories,id',
-            'supplier_id' => 'nullable|exists:suppliers,id', // Ziyadth dyal fournisseur
+            'supplier_id' => 'nullable|exists:suppliers,id',
             'name' => 'required|string|max:150',
             'reference' => 'required|string|max:100|unique:products',
             'slug' => 'required|string|max:150|unique:products',
@@ -44,20 +45,31 @@ class AdminProductController extends Controller
             'price' => 'required|numeric|min:0',
             'stock_quantity' => 'required|integer|min:0',
             'is_active' => 'boolean',
+            // Validation dyal les fichiers dyal l-images
             'images' => 'nullable|array',
-            'images.*.image_path' => 'required|string',
-            'images.*.is_main' => 'boolean',
-            'images.*.position' => 'integer',
+            'images.*' => 'required|image|mimes:jpeg,png,jpg,webp|max:2048', // Kol image khassa tkoun fichier s-hih
             'specifications' => 'nullable|array',
             'specifications.*.name' => 'required|string|max:100',
             'specifications.*.value' => 'required|string|max:255',
         ]);
 
-        $product = DB::transaction(function () use ($validated) {
-            $product = Product::create($validated);
+        $product = DB::transaction(function () use ($request, $validated) {
+            // Ncreew l-produit b l-informations okhra (bla images f direct)
+            $productData = collect($validated)->except(['images', 'specifications'])->toArray();
+            $product = Product::create($productData);
 
-            if (! empty($validated['images'])) {
-                $product->productImages()->createMany($validated['images']);
+            // Traitement w stockage dyal les images lli t-uploadaw k files
+            if ($request->hasFile('images')) {
+                foreach ($request->file('images') as $index => $imageFile) {
+                    // N-stokiw l-image f public storage (storage/app/public/products)
+                    $path = $imageFile->store('products', 'public');
+
+                    $product->productImages()->create([
+                        'image_path' => $path,
+                        'is_main' => $index === 0 ? true : false, // La première image tkon hiya l-principale
+                        'position' => $index + 1,
+                    ]);
+                }
             }
 
             if (! empty($validated['specifications'])) {
@@ -87,19 +99,45 @@ class AdminProductController extends Controller
             'price' => 'sometimes|numeric|min:0',
             'stock_quantity' => 'sometimes|integer|min:0',
             'is_active' => 'boolean',
+            // Optional images f l-update
+            'images' => 'nullable|array',
+            'images.*' => 'required|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
 
-        $product->update($validated);
+        DB::transaction(function () use ($request, $product, $validated) {
+            $productData = collect($validated)->except(['images'])->toArray();
+            $product->update($productData);
+
+            // Ila t-uploadaw images jdidad f l-update
+            if ($request->hasFile('images')) {
+                foreach ($request->file('images') as $index => $imageFile) {
+                    $path = $imageFile->store('products', 'public');
+
+                    $product->productImages()->create([
+                        'image_path' => $path,
+                        'is_main' => false,
+                        'position' => $product->productImages()->count() + $index + 1,
+                    ]);
+                }
+            }
+        });
 
         // Vider l-cache dyal les produits w l-dashboard stats
         $this->clearProductCaches();
 
-        return response()->json($product->load(['category', 'supplier']));
+        return response()->json($product->load(['category', 'supplier', 'productImages', 'productSpecifications']));
     }
 
     public function destroy(int $id): JsonResponse
     {
-        Product::findOrFail($id)->delete();
+        $product = Product::findOrFail($id);
+        
+        // Optionnel: n-ms7o les fichiers dyal l-images mn storage mli t-ms7 l-produit
+        foreach ($product->productImages as $img) {
+            Storage::disk('public')->delete($img->image_path);
+        }
+
+        $product->delete();
 
         // Vider l-cache dyal les produits w l-dashboard stats
         $this->clearProductCaches();
@@ -113,9 +151,6 @@ class AdminProductController extends Controller
     private function clearProductCaches(): void
     {
         Cache::forget('admin_dashboard_stats');
-        
-        // 7it les pages kit-savaw b keys mokhtalifin, tqdr t-st3ml wildcard wla t-flushar cache files ila knti kat-st3ml file driver, 
-        // Wla t-dir Artisan::call('cache:clear'); (Wla ghir Cache::flush();)
         Cache::flush(); 
     }
 }
