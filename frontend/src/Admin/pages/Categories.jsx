@@ -9,8 +9,7 @@ import {
 
 const emptyForm = {
   name: "",
-  slug: "",
-  image: "",
+  image: null,
   description: "",
 };
 
@@ -29,7 +28,8 @@ export default function Categories() {
     setLoading(true);
 
     try {
-      setCategories(await getCategories());
+      const res = await getCategories();
+      setCategories(res.data || res || []);
       setError("");
     } catch (err) {
       setError(err.message || "Erreur de chargement des catégories");
@@ -45,8 +45,7 @@ export default function Categories() {
   function edit(category) {
     setForm({
       name: category.name || "",
-      slug: category.slug || "",
-      image: category.image || "",
+      image: null,
       description: category.description || "",
     });
 
@@ -64,11 +63,20 @@ export default function Categories() {
     e.preventDefault();
     setError("");
 
+    const formData = new FormData();
+    formData.append("name", form.name.trim());
+    if (form.description) formData.append("description", form.description);
+    
+    if (form.image instanceof File) {
+      formData.append("image", form.image);
+    }
+
     try {
       if (editingId) {
-        await updateCategory(editingId, form);
+        formData.append("_method", "PUT");
+        await updateCategory(editingId, formData);
       } else {
-        await createCategory(form);
+        await createCategory(formData);
       }
 
       setShowForm(false);
@@ -76,7 +84,7 @@ export default function Categories() {
       setEditingId(null);
       await load();
     } catch (err) {
-      setError(err.message || "Impossible d'enregistrer la catégorie");
+      setError(err.response?.data?.message || err.message || "Impossible d'enregistrer la catégorie");
     }
   }
 
@@ -151,7 +159,7 @@ export default function Categories() {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <label className="text-sm font-medium text-slate-700">
+            <label className="text-sm font-medium text-slate-700 sm:col-span-2">
               Nom *
               <input
                 required
@@ -162,25 +170,13 @@ export default function Categories() {
               />
             </label>
 
-            <label className="text-sm font-medium text-slate-700">
-              Slug *
-              <input
-                required
-                maxLength="150"
-                value={form.slug}
-                onChange={(e) => setForm({ ...form, slug: e.target.value })}
-                className={inputClass}
-              />
-            </label>
-
             <label className="text-sm font-medium text-slate-700 sm:col-span-2">
-              Image (chemin ou URL)
+              Image (Fichier)
               <input
-                maxLength="255"
-                value={form.image}
-                onChange={(e) => setForm({ ...form, image: e.target.value })}
-                placeholder="https://..."
-                className={inputClass}
+                type="file"
+                accept="image/*"
+                onChange={(e) => setForm({ ...form, image: e.target.files[0] })}
+                className="mt-1.5 block w-full text-sm text-slate-600 file:mr-4 file:rounded-lg file:border-0 file:bg-amber-500 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-[#0A2540] hover:file:bg-amber-400"
               />
             </label>
 
@@ -222,65 +218,68 @@ export default function Categories() {
         </p>
       ) : (
         <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-          {categories.map((category) => (
-            <article
-              key={category.id}
-              className="overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:border-slate-300 hover:shadow-md"
-            >
-              <div className="flex h-40 items-center justify-center overflow-hidden bg-slate-100">
-                {category.image ? (
-                  <img
-                    src={category.image}
-                    alt={category.name}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <ImageIcon size={34} className="text-slate-300" />
-                )}
-              </div>
+          {categories.map((category) => {
+            const fullImgUrl = category.image ? `http://127.0.0.1:8000/storage/${category.image}` : null;
+            return (
+              <article
+                key={category.id}
+                className="overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:border-slate-300 hover:shadow-md"
+              >
+                <div className="flex h-40 items-center justify-center overflow-hidden bg-slate-100">
+                  {fullImgUrl ? (
+                    <img
+                      src={fullImgUrl}
+                      alt={category.name}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <ImageIcon size={34} className="text-slate-300" />
+                  )}
+                </div>
 
-              <div className="p-5">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h3 className="font-bold text-[#0A2540]">
-                      {category.name}
-                    </h3>
-                    <p className="mt-1 text-xs text-slate-500">
-                      {category.slug}
-                    </p>
+                <div className="p-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h3 className="font-bold text-[#0A2540]">
+                        {category.name}
+                      </h3>
+                      <p className="mt-1 text-xs text-slate-400">
+                        Réf / Slug géré auto
+                      </p>
+                    </div>
+
+                    <span className="whitespace-nowrap rounded-md bg-orange-50 px-2.5 py-1.5 text-xs font-semibold text-orange-800">
+                      {category.products_count ?? 0} produit(s)
+                    </span>
                   </div>
 
-                  <span className="whitespace-nowrap rounded-md bg-orange-50 px-2.5 py-1.5 text-xs font-semibold text-orange-800">
-                    {category.products_count ?? 0} produit(s)
-                  </span>
+                  <p className="mt-4 min-h-10 text-sm leading-5 text-slate-600">
+                    {category.description || "Aucune description disponible."}
+                  </p>
+
+                  <div className="mt-5 flex gap-2 border-t border-slate-100 pt-4">
+                    <button
+                      type="button"
+                      onClick={() => edit(category)}
+                      className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                    >
+                      <Pencil size={15} />
+                      Modifier
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => remove(category.id)}
+                      aria-label={`Supprimer ${category.name}`}
+                      className="rounded-lg border border-slate-200 px-3 py-2 text-red-600 hover:border-red-200 hover:bg-red-50"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 </div>
-
-                <p className="mt-4 min-h-10 text-sm leading-5 text-slate-600">
-                  {category.description || "Aucune description disponible."}
-                </p>
-
-                <div className="mt-5 flex gap-2 border-t border-slate-100 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => edit(category)}
-                    className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                  >
-                    <Pencil size={15} />
-                    Modifier
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => remove(category.id)}
-                    aria-label={`Supprimer ${category.name}`}
-                    className="rounded-lg border border-slate-200 px-3 py-2 text-red-600 hover:border-red-200 hover:bg-red-50"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              </div>
-            </article>
-          ))}
+              </article>
+            );
+          })}
 
           {!categories.length && (
             <div className="rounded-xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500 sm:col-span-2 xl:col-span-3">

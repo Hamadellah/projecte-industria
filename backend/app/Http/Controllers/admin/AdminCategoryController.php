@@ -8,12 +8,12 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class AdminCategoryController extends Controller
 {
     public function index(): JsonResponse
     {
-        // Cache l-mouddat 24h
         $categories = Cache::remember('admin_categories_all', 86400, function () {
             return Category::withCount('products')->get();
         });
@@ -24,13 +24,17 @@ class AdminCategoryController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:150',
-            'slug' => 'required|string|max:150|unique:categories',
+            'name'        => 'required|string|max:150',
+            'slug'        => 'nullable|string|max:150|unique:categories',
             'description' => 'nullable|string',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048', // Validation dyal l-file dyal l-image
+            'image'       => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
 
         $categoryData = collect($validated)->except(['image'])->toArray();
+
+        // Génération automatique dyal l-slug ila makantch m-dkhla
+        $slugBase = !empty($validated['slug']) ? $validated['slug'] : $validated['name'];
+        $categoryData['slug'] = Str::slug($slugBase) . '-' . uniqid();
 
         // Traitement w stockage dyal l-image ila t-uploadat
         if ($request->hasFile('image')) {
@@ -39,7 +43,7 @@ class AdminCategoryController extends Controller
 
         $category = Category::create($categoryData);
 
-        // Clear l-cache dyal Admin categories
+        // Clear l-cache
         Cache::forget('admin_categories_all');
         Cache::forget('admin_dashboard_stats');
 
@@ -51,17 +55,22 @@ class AdminCategoryController extends Controller
         $category = Category::findOrFail($id);
 
         $validated = $request->validate([
-            'name' => 'sometimes|string|max:150',
-            'slug' => 'sometimes|string|max:150|unique:categories,slug,' . $id,
+            'name'        => 'sometimes|string|max:150',
+            'slug'        => 'nullable|string|max:150|unique:categories,slug,' . $id,
             'description' => 'nullable|string',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'image'       => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
 
         $categoryData = collect($validated)->except(['image'])->toArray();
 
+        // Re-génération dyal l-slug ila t-baddal l-name wla t-sifft slug jdid
+        if (isset($validated['name']) || isset($validated['slug'])) {
+            $slugBase = !empty($validated['slug']) ? $validated['slug'] : ($validated['name'] ?? $category->name);
+            $categoryData['slug'] = Str::slug($slugBase) . '-' . uniqid();
+        }
+
         // Ila t-uploadat image jdida f l-update
         if ($request->hasFile('image')) {
-            // N-ms7o l-image l-qdima ila kant kat-khass l-hal
             if ($category->image) {
                 Storage::disk('public')->delete($category->image);
             }
@@ -81,7 +90,6 @@ class AdminCategoryController extends Controller
     {
         $category = Category::findOrFail($id);
 
-        // N-ms7 l-image mn storage ila kants m-stokiya
         if ($category->image) {
             Storage::disk('public')->delete($category->image);
         }
