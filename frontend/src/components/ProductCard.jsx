@@ -2,12 +2,14 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Plus } from 'lucide-react'
+
 import { formatPrice } from '../data/products'
 import { useCart } from '../context/CartContext'
 import ProductVisual from './ProductVisual'
 
 export default function ProductCard({ product }) {
   const { add } = useCart()
+
   const [adding, setAdding] = useState(false)
   const [message, setMessage] = useState('')
   const [success, setSuccess] = useState(false)
@@ -18,7 +20,8 @@ export default function ProductCard({ product }) {
     setSuccess(false)
 
     try {
-      await add(product.id, 1)
+      await add(product.id, 1, product)
+
       setMessage('Produit ajouté au panier.')
       setSuccess(true)
     } catch (error) {
