@@ -1,54 +1,77 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Eye, EyeOff, LogIn } from "lucide-react";
-import { apiRequest } from "../services/api";
+
+import { useState } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Eye, EyeOff, LogIn } from 'lucide-react'
+
+import { apiRequest } from '../services/api'
+import { useCart } from '../context/CartContext'
 
 const inputClass =
-  "w-full rounded-xl border border-steel-700/60 !bg-navy-900 px-4 py-3 !text-white placeholder:!text-steel-500 outline-none transition focus:border-volt-500 focus:ring-2 focus:ring-volt-500/20";
+  "w-full rounded-xl border border-steel-700/60 !bg-navy-900 px-4 py-3 !text-white placeholder:!text-steel-500 outline-none transition focus:border-volt-500 focus:ring-2 focus:ring-volt-500/20"
 
 export default function Login() {
-  const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const navigate = useNavigate()
+  const location = useLocation()
+
+  const { migrateGuestCart } = useCart()
+
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
   async function handleSubmit(e) {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
+    e.preventDefault()
+
+    setError('')
+    setLoading(true)
 
     try {
-      const data = await apiRequest("/login", {
-        method: "POST",
+      const data = await apiRequest('/login', {
+        method: 'POST',
         body: JSON.stringify({
           email: email.trim(),
           password,
         }),
-      });
+      })
 
-      localStorage.setItem("token", data.access_token);
-      localStorage.setItem("user", JSON.stringify(data.user));
+      localStorage.setItem('token', data.access_token)
+      localStorage.setItem('user', JSON.stringify(data.user))
 
-      if (data.user?.role === "admin") {
-        navigate("/admin", { replace: true });
-      } else {
-        navigate("/mon-compte", { replace: true });
+      if (data.user?.role === 'admin') {
+        navigate('/admin', { replace: true })
+        return
       }
+
+      // نقل المنتجات من Guest Cart إلى MySQL
+      await migrateGuestCart()
+
+      // الرجوع إلى panier بعد Login
+      const destination =
+        location.state?.from === '/panier'
+          ? '/panier'
+          : '/mon-compte'
+
+      navigate(destination, { replace: true })
     } catch (err) {
-      setError(err.message || "Email ou mot de passe incorrect.");
+      setError(
+        err.message ||
+        'Une erreur est survenue pendant la connexion.'
+      )
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
   }
 
   return (
     <main className="relative flex min-h-screen items-center justify-center overflow-hidden !bg-abyss px-4 py-12 sm:px-6">
       <div className="pointer-events-none absolute -left-32 top-10 h-80 w-80 rounded-full border-[35px] border-volt-500/5" />
+
       <div className="pointer-events-none absolute -bottom-40 -right-20 h-96 w-96 rounded-full border-[40px] border-steel-500/5" />
 
       <div className="relative grid w-full max-w-5xl overflow-hidden border border-steel-700/50 !bg-navy-950 shadow-2xl md:grid-cols-2">
+
         <section className="relative hidden flex-col justify-between overflow-hidden !bg-navy-900 p-10 !text-white md:flex">
           <div className="blueprint absolute inset-0 opacity-40" />
 
@@ -117,7 +140,7 @@ export default function Login() {
                 autoComplete="email"
                 required
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={e => setEmail(e.target.value)}
                 placeholder="exemple@email.com"
                 className={inputClass}
               />
@@ -134,26 +157,29 @@ export default function Login() {
               <div className="relative">
                 <input
                   id="password"
-                  type={showPassword ? "text" : "password"}
+                  type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
                   required
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={e => setPassword(e.target.value)}
                   placeholder="Votre mot de passe"
                   className={`${inputClass} pr-12`}
                 />
 
                 <button
                   type="button"
-                  onClick={() => setShowPassword((current) => !current)}
+                  onClick={() => setShowPassword(value => !value)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 !text-steel-400 transition hover:!text-volt-400"
                   aria-label={
                     showPassword
-                      ? "Masquer le mot de passe"
-                      : "Afficher le mot de passe"
+                      ? 'Masquer le mot de passe'
+                      : 'Afficher le mot de passe'
                   }
                 >
-                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  {showPassword
+                    ? <EyeOff size={20} />
+                    : <Eye size={20} />
+                  }
                 </button>
               </div>
             </div>
@@ -173,12 +199,12 @@ export default function Login() {
               className="flex w-full items-center justify-center gap-2 !bg-volt-500 px-4 py-3 font-bold !text-navy-950 transition hover:!bg-volt-400 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <LogIn size={18} />
-              {loading ? "Connexion..." : "Se connecter"}
+              {loading ? 'Connexion...' : 'Se connecter'}
             </button>
           </form>
 
           <p className="mt-7 text-center text-sm !text-steel-400">
-            Pas encore de compte ?{" "}
+            Pas encore de compte ?{' '}
             <Link
               to="/register"
               className="font-semibold !text-volt-400 hover:underline"
@@ -189,5 +215,5 @@ export default function Login() {
         </section>
       </div>
     </main>
-  );
+  )
 }
