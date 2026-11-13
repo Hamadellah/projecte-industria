@@ -13,7 +13,8 @@ class AdminOrderController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = Order::with(['user', 'orderItems.product', 'payments'])->latest();
+        // حيدنا 'payments' من هنا
+        $query = Order::with(['user', 'orderItems.product', 'invoice'])->latest();
 
         // 1. Filtrer par état (status)
         if ($request->filled('status')) {
@@ -33,7 +34,8 @@ class AdminOrderController extends Controller
 
     public function show(int $id): JsonResponse
     {
-        $order = Order::with(['user', 'orderItems.product', 'payments', 'invoice'])->findOrFail($id);
+        // وحيدنا 'payments' حتى من هنا
+        $order = Order::with(['user', 'orderItems.product', 'invoice'])->findOrFail($id);
 
         return response()->json($order);
     }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Models\Invoice;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -45,8 +46,10 @@ class OrderController extends Controller
                     !$product ||
                     $cartItem->quantity > $product->stock_quantity
                 ) {
-                    throw new \RuntimeException(
-                        'A product is unavailable or has insufficient stock.'
+                    throw new \Illuminate\Http\Exceptions\HttpResponseException(
+                        response()->json([
+                            'message' => "Le produit {$product?->name} est indisponible ou stock insuffisant."
+                        ], 422)
                     );
                 }
 
@@ -64,14 +67,16 @@ class OrderController extends Controller
 
             $subtotal = round($subtotal, 2);
             $deliveryFee = 0;
+            $total = round($subtotal + $deliveryFee, 2);
 
+            // 1. Création de la commande
             $order = Order::create([
                 'user_id' => $request->user()->id,
                 'order_number' => 'ORD-' . Str::upper(Str::random(12)),
                 'status' => 'pending',
                 'subtotal' => $subtotal,
                 'delivery_fee' => $deliveryFee,
-                'total' => round($subtotal + $deliveryFee, 2),
+                'total' => $total,
                 'recipient_name' => $validated['recipient_name'],
                 'phone' => $validated['phone'],
                 'city' => $validated['city'],
@@ -86,21 +91,35 @@ class OrderController extends Controller
                     ->decrement('stock_quantity', $item['quantity']);
             }
 
+            // 2. Création automatique de la Facture avec subtotal, tax_amount, delivery_fee
+            Invoice::create([
+                'order_id' => $order->id,
+                'user_id' => $request->user()->id,
+                'invoice_number' => 'FAC-' . Str::upper(Str::random(12)),
+                'subtotal' => $subtotal,
+                'tax_amount' => 0.00,
+                'delivery_fee' => $deliveryFee, // Zidna delivery_fee bash y-t-henna l-error
+                'total' => $total,
+                'status' => 'unpaid',
+                'issued_date' => now(),
+            ]);
+
+            // 3. Vider le panier
             $cart->cartItems()->delete();
 
             return $order;
         });
 
         return response()->json([
-            'message' => 'Order created successfully.',
-            'order' => $order->load('orderItems'),
+            'message' => 'Order and invoice created successfully.',
+            'order' => $order->load(['orderItems', 'invoice']),
         ], 201);
     }
 
     public function index(Request $request)
     {
         $orders = Order::where('user_id', $request->user()->id)
-            ->with('orderItems')
+            ->with(['orderItems', 'invoice'])
             ->latest()
             ->paginate(10);
 
@@ -110,7 +129,7 @@ class OrderController extends Controller
     public function show(Request $request, int $id)
     {
         $order = Order::where('user_id', $request->user()->id)
-            ->with('orderItems')
+            ->with(['orderItems', 'invoice'])
             ->findOrFail($id);
 
         return response()->json([
