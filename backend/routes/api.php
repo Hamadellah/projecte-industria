@@ -22,6 +22,7 @@ use App\Http\Controllers\api\AuthController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\QuotationController;
 
 
 // ========================================
@@ -205,3 +206,5 @@ Route::middleware('auth:sanctum')->group(function () {
     ]);
 
 });
+// حطها برة الجروب ديال auth:sanctum
+Route::get('/client/products/{productId}/quotations', [QuotationController::class, 'getClientProductQuotations']);

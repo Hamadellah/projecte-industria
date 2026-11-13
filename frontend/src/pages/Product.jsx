@@ -1,7 +1,6 @@
-
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ArrowLeft, Check, Minus, Plus, ShoppingCart } from 'lucide-react'
+import { ArrowLeft, Check, FileText, Minus, Plus, ShoppingCart } from 'lucide-react'
 import Page from '../components/Page'
 import ProductVisual from '../components/ProductVisual'
 import ProductCard from '../components/ProductCard'
@@ -15,6 +14,7 @@ export default function Product() {
 
   const [product, setProduct] = useState(null)
   const [related, setRelated] = useState([])
+  const [quotations, setQuotations] = useState([]) 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [qty, setQty] = useState(1)
@@ -27,9 +27,11 @@ export default function Product() {
     setError('')
     setProduct(null)
     setRelated([])
+    setQuotations([])
     setQty(1)
     setAdded(false)
 
+    // 1. جلب تفاصيل المنتج
     getStoreProduct(id)
       .then((data) => {
         if (cancelled) return
@@ -42,6 +44,7 @@ export default function Product() {
           specs: data.product_specifications ?? data.productSpecifications ?? [],
         })
 
+        // 2. جلب المنتجات المشابهة
         getStoreProducts()
           .then((items) => {
             if (cancelled || !Array.isArray(items)) return
@@ -74,6 +77,22 @@ export default function Product() {
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
+      })
+
+    // 3. جلب الديڤيسات الحقيقية الخاصة بهذا المنتج من الباك إند (Public بلا توكن)
+    fetch(`http://127.0.0.1:8000/api/client/products/${id}/quotations`, {
+      headers: {
+        Accept: 'application/json',
+      },
+    })
+      .then((res) => (res.ok ? res.json() : Promise.reject(res)))
+      .then((data) => {
+        if (!cancelled && data.quotations) {
+          setQuotations(data.quotations)
+        }
+      })
+      .catch(() => {
+        // في حالة عدم وجود ديڤيسات أو خطأ، يبقى الـ array خاوي
       })
 
     return () => {
@@ -211,6 +230,38 @@ export default function Product() {
               </Link>
             )}
           </div>
+
+          {/* ========================================================= */}
+          {/* لا يظهر هذا البلوك نهائياً إلا إذا وجد الـ API ديڤيسات حقيقية للمنتج */}
+          {/* ========================================================= */}
+          {quotations.length > 0 && (
+            <div className="mt-8 border border-volt-400/30 bg-navy-800/60 p-5 rounded-xl">
+              <div className="flex items-center gap-2 text-volt-400">
+                <FileText size={20} aria-hidden="true" />
+                <h3 className="font-semibold text-white">
+                  Devis disponible(s) pour ce produit
+                </h3>
+              </div>
+
+              <div className="mt-4 divide-y divide-steel-700/40">
+                {quotations.map((q) => (
+                  <div key={q.id} className="flex flex-wrap items-center justify-between gap-4 py-3 first:pt-0 last:pb-0">
+                    <div>
+                      <p className="text-sm font-medium text-white">{q.quotation_number ?? `Devis #${q.id}`}</p>
+                      <p className="text-xs text-steel-400">Total : {formatPrice(q.total)} • Statut : {q.status}</p>
+                    </div>
+                    <Link
+                      to={`/compte/devis/${q.id}`}
+                      className="inline-flex items-center gap-2 border border-volt-400 px-4 py-2 text-sm font-semibold text-volt-400 transition hover:bg-volt-400 hover:text-navy-950"
+                    >
+                      <FileText size={16} />
+                      Afficher le devis
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <h2 className="display mt-12 text-3xl font-bold text-white">
             Caractéristiques
