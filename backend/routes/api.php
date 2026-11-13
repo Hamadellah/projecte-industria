@@ -1,6 +1,9 @@
 
 <?php
 
+use Illuminate\Support\Facades\Route;
+
+// Admin Controllers
 use App\Http\Controllers\Admin\AdminCategoryController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminInvoiceController;
@@ -10,39 +13,34 @@ use App\Http\Controllers\Admin\AdminQuotationController;
 use App\Http\Controllers\Admin\AdminSupplierController;
 use App\Http\Controllers\Admin\AdminUserController;
 
+// Auth Controllers
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\api\AuthController;
 
+// Store Controllers
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\OrderController;
 
-use Illuminate\Support\Facades\Route;
-
 
 // ========================================
-// Routes Publiques (Authentication)
+// Routes publiques
 // ========================================
 
 Route::post('/register', [RegisterController::class, 'register']);
+
 Route::post('/login', [LoginController::class, 'login']);
 
-
-// ========================================
-// Routes Publiques (Storefront)
-// ========================================
-
-// Categories publiques - sans authentification
 Route::get('/categories', [AdminCategoryController::class, 'index']);
 
-// Produits publics
 Route::get('/products', [ProductController::class, 'index']);
+
 Route::get('/products/{product}', [ProductController::class, 'show']);
 
 
 // ========================================
-// Routes Admin (Protected by Sanctum & Admin Middleware)
+// Routes Admin
 // ========================================
 
 Route::middleware(['auth:sanctum', 'admin'])
@@ -50,54 +48,160 @@ Route::middleware(['auth:sanctum', 'admin'])
     ->group(function () {
 
         // Dashboard
-        Route::get('/dashboard', [AdminDashboardController::class, 'index']);
+        Route::get('/dashboard', [
+            AdminDashboardController::class,
+            'index'
+        ]);
 
-        // Categories & Products & Suppliers & Quotations
+        // Categories
         Route::apiResource('categories', AdminCategoryController::class);
+
+        // Products
         Route::apiResource('products', AdminProductController::class);
+
+        // Suppliers
         Route::apiResource('suppliers', AdminSupplierController::class);
+
+        // Quotations
         Route::apiResource('quotations', AdminQuotationController::class);
 
-        // Quotations Status
-        Route::patch('/quotations/{id}/status', [AdminQuotationController::class, 'updateStatus']);
+        Route::patch('/quotations/{id}/status', [
+            AdminQuotationController::class,
+            'updateStatus'
+        ]);
 
         // Orders Management
-        Route::get('/orders', [AdminOrderController::class, 'index']);
-        Route::get('/orders/{id}', [AdminOrderController::class, 'show']);
-        Route::patch('/orders/{id}/status', [AdminOrderController::class, 'updateStatus']);
+        Route::get('/orders', [
+            AdminOrderController::class,
+            'index'
+        ]);
+
+        Route::get('/orders/{id}', [
+            AdminOrderController::class,
+            'show'
+        ]);
+
+        Route::patch('/orders/{id}/status', [
+            AdminOrderController::class,
+            'updateStatus'
+        ]);
 
         // Invoices Management
-        Route::get('/invoices', [AdminInvoiceController::class, 'index']);
-        Route::get('/invoices/{id}', [AdminInvoiceController::class, 'show']);
-        Route::patch('/invoices/{id}/status', [AdminInvoiceController::class, 'updateStatus']);
+        Route::get('/invoices', [
+            AdminInvoiceController::class,
+            'index'
+        ]);
+
+        Route::get('/invoices/{id}', [
+            AdminInvoiceController::class,
+            'show'
+        ]);
+
+        Route::patch('/invoices/{id}/status', [
+            AdminInvoiceController::class,
+            'updateStatus'
+        ]);
 
         // Users & Customers Management
-        Route::get('/users', [AdminUserController::class, 'index']);
-        Route::get('/users/{id}', [AdminUserController::class, 'show']);
-        Route::patch('/users/{id}/role', [AdminUserController::class, 'updateRole']);
-        Route::delete('/users/{id}', [AdminUserController::class, 'destroy']);
+        Route::get('/users', [
+            AdminUserController::class,
+            'index'
+        ]);
+
+        Route::get('/users/{id}', [
+            AdminUserController::class,
+            'show'
+        ]);
+
+        Route::patch('/users/{id}/role', [
+            AdminUserController::class,
+            'updateRole'
+        ]);
+
+        Route::delete('/users/{id}', [
+            AdminUserController::class,
+            'destroy'
+        ]);
     });
 
 
 // ========================================
-// Routes Protégées (Client / User)
+// Routes Client / User
 // ========================================
 
 Route::middleware('auth:sanctum')->group(function () {
 
-    // User
-    Route::get('/user', [AuthController::class, 'user']);
-    Route::post('/logout', [AuthController::class, 'logout']);
+    // ====================================
+    // User Management
+    // ====================================
 
+    Route::get('/user', [
+        AuthController::class,
+        'user'
+    ]);
+
+    Route::post('/logout', [
+        AuthController::class,
+        'logout'
+    ]);
+
+
+    // ====================================
     // Cart Management
-    Route::get('/cart', [CartController::class, 'index']);
-    Route::post('/cart', [CartController::class, 'store']);
-    Route::patch('/cart/{item}', [CartController::class, 'update']);
-    Route::delete('/cart/{item}', [CartController::class, 'destroy']);
-    Route::delete('/cart', [CartController::class, 'clear']);
+    // ====================================
 
-    // Orders Management (Client)
-    Route::post('/orders', [OrderController::class, 'store']);
-    Route::get('/orders', [OrderController::class, 'index']);
-    Route::get('/orders/{id}', [OrderController::class, 'show']);
+    Route::get('/cart', [
+        CartController::class,
+        'index'
+    ]);
+
+    Route::post('/cart', [
+        CartController::class,
+        'store'
+    ]);
+
+    // Guest Cart Synchronization
+    Route::post('/cart/sync', [
+        CartController::class,
+        'sync'
+    ]);
+
+    Route::patch('/cart/{item}', [
+        CartController::class,
+        'update'
+    ]);
+
+    Route::delete('/cart/{item}', [
+        CartController::class,
+        'destroy'
+    ]);
+
+    Route::delete('/cart', [
+        CartController::class,
+        'clear'
+    ]);
+
+
+    // ====================================
+    // Orders Management
+    // ====================================
+
+    // Create a new order
+    Route::post('/orders', [
+        OrderController::class,
+        'store'
+    ]);
+
+    // Get all orders of authenticated user
+    Route::get('/orders', [
+        OrderController::class,
+        'index'
+    ]);
+
+    // Get details of a specific order
+    Route::get('/orders/{id}', [
+        OrderController::class,
+        'show'
+    ]);
+
 });

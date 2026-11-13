@@ -1,10 +1,11 @@
 <?php
-
 namespace App\Models;
+
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Order extends Model
 {
@@ -13,7 +14,7 @@ class Order extends Model
     protected $fillable = [
         'user_id',
         'order_number',
-        'status', // pending, processing, shipped, delivered, cancelled
+        'status',
         'subtotal',
         'tax_amount',
         'delivery_fee',
@@ -25,14 +26,21 @@ class Order extends Model
         'notes',
     ];
 
-    // ... relations user, items ...
+    // Relation avec les produits de la commande
+    public function orderItems(): HasMany
+    {
+        return $this->hasMany(OrderItem::class);
+    }
 
-    // --- Jdid: Relation m3a la facture ---
-    /**
-     * Relation: Une commande a une seule facture.
-     */
+    // Relation avec la facture
     public function invoice(): HasOne
     {
         return $this->hasOne(Invoice::class);
+    }
+
+    // Relation avec le client
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 }
