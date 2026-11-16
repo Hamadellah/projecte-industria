@@ -1,4 +1,3 @@
-
 import { Route, Routes } from "react-router-dom";
 
 import { CartProvider } from "./context/CartContext";
@@ -14,6 +13,7 @@ import Categories from "./pages/Categories";
 import Product from "./pages/Product";
 import Cart from "./pages/Cart";
 import Contact from "./pages/Contact";
+import Devis from "./pages/Devis";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import MonCompte from "./pages/MonCompte";
@@ -60,6 +60,8 @@ function StoreLayout() {
           <Route path="/panier" element={<Cart />} />
 
           <Route path="/contact" element={<Contact />} />
+
+          <Route path="/devis" element={<Devis />} />
 
           <Route path="/mon-compte" element={<MonCompte />} />
 

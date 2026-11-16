@@ -13,16 +13,15 @@ class AdminQuotationController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $page = $request->get('page', 1);
-        $status = $request->get('status', 'all');
+        $page = max(1, (int) $request->get('page', 1));
+        $status = (string) $request->get('status', 'all');
         $cacheKey = "admin_quotations_page_{$page}_status_{$status}";
 
-        // Cache dyal les devis l-mouddat 60 minutes
-        $quotations = Cache::remember($cacheKey, 3600, function () use ($request) {
+        $quotations = Cache::remember($cacheKey, 60, function () use ($status) {
             $query = Quotation::with(['user', 'quotationItems.product'])->latest();
 
-            if ($request->filled('status')) {
-                $query->where('status', $request->status);
+            if ($status !== '' && $status !== 'all') {
+                $query->where('status', $status);
             }
 
             return $query->paginate(20);
@@ -34,7 +33,11 @@ class AdminQuotationController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'user_id' => 'required|exists:users,id',
+            'user_id' => 'nullable|exists:users,id',
+            'client_name' => 'nullable|string|max:150',
+            'client_email' => 'nullable|email|max:150',
+            'client_phone' => 'nullable|string|max:50',
+            'company_name' => 'nullable|string|max:150',
             'quotation_number' => 'required|string|max:100|unique:quotations',
             'status' => 'required|string|in:pending,accepted,rejected',
             'total' => 'required|numeric|min:0',
@@ -48,7 +51,11 @@ class AdminQuotationController extends Controller
 
         $quotation = DB::transaction(function () use ($validated) {
             $quotation = Quotation::create([
-                'user_id' => $validated['user_id'],
+                'user_id' => $validated['user_id'] ?? null,
+                'client_name' => $validated['client_name'] ?? null,
+                'client_email' => $validated['client_email'] ?? null,
+                'client_phone' => $validated['client_phone'] ?? null,
+                'company_name' => $validated['company_name'] ?? null,
                 'quotation_number' => $validated['quotation_number'],
                 'status' => $validated['status'],
                 'total' => $validated['total'],
@@ -62,7 +69,6 @@ class AdminQuotationController extends Controller
             return $quotation->load(['user', 'quotationItems.product']);
         });
 
-        // Vider l-cache dyal quotations w dashboard stats
         $this->clearQuotationCaches();
 
         return response()->json($quotation, 201);
@@ -71,6 +77,7 @@ class AdminQuotationController extends Controller
     public function show(int $id): JsonResponse
     {
         $quotation = Quotation::with(['user', 'quotationItems.product'])->findOrFail($id);
+
         return response()->json($quotation);
     }
 
@@ -83,12 +90,11 @@ class AdminQuotationController extends Controller
         $quotation = Quotation::findOrFail($id);
         $quotation->update(['status' => $validated['status']]);
 
-        // Vider l-cache
         $this->clearQuotationCaches();
 
         return response()->json([
             'message' => 'Quotation status updated successfully',
-            'quotation' => $quotation
+            'quotation' => $quotation->fresh(['user', 'quotationItems.product']),
         ]);
     }
 
@@ -96,15 +102,11 @@ class AdminQuotationController extends Controller
     {
         Quotation::findOrFail($id)->delete();
 
-        // Vider l-cache
         $this->clearQuotationCaches();
 
         return response()->json(['message' => 'Quotation deleted successfully']);
     }
 
-    /**
-     * Helper function bach t-ms7 cache dyal quotations w dashboard.
-     */
     private function clearQuotationCaches(): void
     {
         Cache::forget('admin_dashboard_stats');

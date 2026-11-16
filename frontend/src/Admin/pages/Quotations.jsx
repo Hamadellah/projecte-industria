@@ -1,4 +1,3 @@
-
 import { useEffect, useMemo, useState } from "react";
 import {
   FileText, Search, Eye, RefreshCw, X, ChevronLeft, ChevronRight,
@@ -52,7 +51,8 @@ function getCreatorName(quotation) {
     quotation?.user?.name ||
     quotation?.user?.full_name ||
     quotation?.customer?.name ||
-    "Admin non renseigné"
+    quotation?.client_name ||
+    "Client invité"
   );
 }
 
@@ -182,7 +182,6 @@ export default function Quotations() {
     loadQuotations(1, statusFilter);
   }, [statusFilter]);
 
-  // Open browser print dialog when a quotation is selected for printing.
   useEffect(() => {
     if (!printQuotation) return;
 
@@ -359,6 +358,9 @@ export default function Quotations() {
     return [
       getQuotationNumber(quotation),
       getCreatorName(quotation),
+      quotation?.client_name,
+      quotation?.client_email,
+      quotation?.client_phone,
       quotation?.status,
     ].some((value) => String(value || "").toLowerCase().includes(query));
   });
@@ -432,7 +434,6 @@ export default function Quotations() {
     }
   }
 
-  // EDIT: loads quotation and products, then allows local editing.
   async function openEditForm(quotation) {
     setEditError("");
     setProductsLoading(true);
@@ -526,8 +527,6 @@ export default function Quotations() {
     setEditItems((current) => current.filter((item) => String(item.product_id) !== String(productId)));
   }
 
-  // This saves the edited version in React state only.
-  // It does NOT send a PUT/PATCH request to the backend.
   function saveEditLocally() {
     setEditError("");
 
@@ -700,7 +699,7 @@ export default function Quotations() {
                   <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                     <tr>
                       <th className="px-5 py-4 font-semibold">N° Devis</th>
-                      <th className="px-5 py-4 font-semibold">Admin créateur</th>
+                      <th className="px-5 py-4 font-semibold">Demandeur / Créateur</th>
                       <th className="px-5 py-4 font-semibold">Date</th>
                       <th className="px-5 py-4 font-semibold">Montant</th>
                       <th className="px-5 py-4 font-semibold">Statut</th>
@@ -719,7 +718,14 @@ export default function Quotations() {
                               {getQuotationNumber(quotation)}
                             </button>
                           </td>
-                          <td className="px-5 py-4 font-medium text-slate-700">{getCreatorName(quotation)}</td>
+                          <td className="px-5 py-4">
+                            <div className="font-medium text-slate-700">{getCreatorName(quotation)}</div>
+                            {!quotation?.user && (quotation?.client_email || quotation?.client_phone) && (
+                              <div className="mt-0.5 text-xs text-slate-400">
+                                {[quotation?.client_email, quotation?.client_phone].filter(Boolean).join(" • ")}
+                              </div>
+                            )}
+                          </td>
                           <td className="px-5 py-4 text-slate-500">{formatDate(quotation.created_at)}</td>
                           <td className="px-5 py-4 font-semibold text-[#0A2540]">{formatMoney(quotation.total)}</td>
                           <td className="px-5 py-4">
@@ -813,281 +819,8 @@ export default function Quotations() {
                     </div>
                   )}
                 </div>
-
-                <div>
-                  <div className="mb-3 flex items-center justify-between"><h3 className="font-semibold text-[#0A2540]">Produits du devis</h3><span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">{quotationItems.length} produit(s)</span></div>
-                  {quotationItems.length === 0 ? (
-                    <div className="rounded-xl border border-dashed border-slate-300 py-10 text-center"><Package size={30} className="mx-auto text-slate-300" /><p className="mt-2 font-medium text-slate-600">Aucun produit ajouté</p><p className="mt-1 text-xs text-slate-400">Sélectionnez un produit pour commencer.</p></div>
-                  ) : (
-                    <div className="overflow-x-auto rounded-xl border border-slate-200">
-                      <table className="w-full min-w-[650px] text-sm">
-                        <thead className="bg-slate-50 text-xs text-slate-500"><tr><th className="px-4 py-3 text-left font-semibold">Produit</th><th className="px-4 py-3 text-center font-semibold">Quantité</th><th className="px-4 py-3 text-right font-semibold">Prix unitaire</th><th className="px-4 py-3 text-right font-semibold">Sous-total</th><th className="px-4 py-3 text-center font-semibold">Action</th></tr></thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {quotationItems.map((item) => (
-                            <tr key={item.product_id}>
-                              <td className="px-4 py-4 font-medium text-slate-700">{item.product_name}</td>
-                              <td className="px-4 py-4"><div className="flex items-center justify-center gap-2">
-                                <button type="button" onClick={() => updateItemQuantity(item.product_id, item.quantity - 1)} disabled={item.quantity <= 1} className="rounded-md border border-slate-200 p-1.5 text-slate-600 disabled:opacity-30"><Minus size={13} /></button>
-                                <input type="number" min="1" value={item.quantity} onChange={(event) => updateItemQuantity(item.product_id, event.target.value)} className="w-16 rounded-md border border-slate-200 px-2 py-1.5 text-center outline-none focus:border-amber-500" />
-                                <button type="button" onClick={() => updateItemQuantity(item.product_id, item.quantity + 1)} className="rounded-md border border-slate-200 p-1.5 text-slate-600"><Plus size={13} /></button>
-                              </div></td>
-                              <td className="px-4 py-4"><input type="number" min="0" step="0.01" value={item.unit_price} onChange={(event) => updateItemPrice(item.product_id, event.target.value)} className="ml-auto block w-28 rounded-md border border-slate-200 px-2 py-2 text-right outline-none focus:border-amber-500" /></td>
-                              <td className="px-4 py-4 text-right font-semibold text-[#0A2540]">{formatMoney(item.subtotal)}</td>
-                              <td className="px-4 py-4 text-center"><button type="button" onClick={() => removeItem(item.product_id)} className="rounded-lg p-2 text-red-500 hover:bg-red-50"><Trash size={16} /></button></td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-semibold text-[#0A2540]">Notes / Remarques</label>
-                  <textarea value={notes} onChange={(event) => setNotes(event.target.value)} rows={3} placeholder="Ajouter des remarques facultatives..." className="w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-100" />
-                </div>
-
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-slate-600"><Calculator size={17} /> Récapitulatif du devis</div>
-                  <div className="mt-4 flex items-center justify-between"><span className="text-sm text-slate-500">Nombre de produits</span><span className="font-semibold text-slate-700">{quotationItems.length}</span></div>
-                  <div className="mt-3 flex items-center justify-between border-t border-slate-200 pt-4"><span className="font-semibold text-[#0A2540]">Total général</span><span className="text-2xl font-bold text-[#0A2540]">{formatMoney(total)}</span></div>
-                </div>
-
-                {formError && <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"><AlertCircle size={17} className="mt-0.5 shrink-0" />{formError}</div>}
-              </div>
-
-              <div className="flex flex-col-reverse gap-2 border-t border-slate-100 bg-white px-5 py-4 sm:flex-row sm:justify-end sm:px-7">
-                <button type="button" onClick={() => setShowCreateForm(false)} disabled={creating} className="rounded-lg border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50">Annuler</button>
-                <button type="submit" disabled={creating || productsLoading || quotationItems.length === 0} className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#0A2540] px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-[#123b61] disabled:cursor-not-allowed disabled:opacity-50">
-                  {creating ? <><RefreshCw size={16} className="animate-spin" /> Enregistrement...</> : <><Save size={16} /> Créer le devis</>}
-                </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-
-      {/* DETAILS MODAL */}
-      {selectedQuotation && !showEditForm && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-slate-950/50 p-4 print:hidden" onClick={() => setSelectedQuotation(null)}>
-          <div className="my-auto w-full max-w-3xl overflow-hidden rounded-xl bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
-            <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-              <div>
-                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-amber-600"><FileCheck size={15} /> Détail du devis</div>
-                <h2 className="mt-1 font-bold text-[#0A2540]">{getQuotationNumber(selectedQuotation)}</h2>
-              </div>
-              <button type="button" onClick={() => setSelectedQuotation(null)} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100"><X size={19} /></button>
-            </div>
-
-            {detailLoading ? (
-              <div className="flex items-center justify-center gap-3 py-16 text-sm text-slate-500"><RefreshCw size={18} className="animate-spin" /> Chargement des détails...</div>
-            ) : (
-              <div className="space-y-5 p-6">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-lg bg-slate-50 p-4"><p className="flex items-center gap-2 text-xs text-slate-500"><User size={14} /> Admin créateur</p><p className="mt-2 font-semibold text-[#0A2540]">{getCreatorName(selectedQuotation)}</p></div>
-                  <div className="rounded-lg bg-slate-50 p-4"><p className="flex items-center gap-2 text-xs text-slate-500"><CalendarDays size={14} /> Date de création</p><p className="mt-2 font-semibold text-[#0A2540]">{formatDate(selectedQuotation.created_at)}</p></div>
-                  <div className="rounded-lg bg-slate-50 p-4"><p className="flex items-center gap-2 text-xs text-slate-500"><CreditCard size={14} /> Montant total</p><p className="mt-2 font-bold text-[#0A2540]">{formatMoney(selectedQuotation.total)}</p></div>
-                  <div className="rounded-lg bg-slate-50 p-4"><p className="flex items-center gap-2 text-xs text-slate-500"><FileText size={14} /> Numéro du devis</p><p className="mt-2 font-semibold text-[#0A2540]">{getQuotationNumber(selectedQuotation)}</p></div>
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-xs font-semibold text-slate-600">Modifier le statut du devis</label>
-                  <select value={selectedQuotation.status || "pending"} disabled={updatingStatus} onChange={(event) => handleStatusChange(selectedQuotation, event.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-amber-500 disabled:opacity-50">
-                    <option value="pending">En attente</option><option value="accepted">Accepté</option><option value="rejected">Refusé</option>
-                  </select>
-                </div>
-
-                {selectedQuotation.notes && <div className="rounded-lg border border-slate-200 p-4"><p className="text-xs font-semibold text-slate-500">Notes</p><p className="mt-2 whitespace-pre-wrap text-sm text-slate-700">{selectedQuotation.notes}</p></div>}
-
-                <div>
-                  <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-[#0A2540]"><Package size={17} /> Produits du devis</h3>
-                  {getItems(selectedQuotation).length === 0 ? (
-                    <div className="rounded-lg border border-dashed border-slate-200 py-8 text-center text-sm text-slate-500">Aucun produit disponible dans ce devis.</div>
-                  ) : (
-                    <div className="overflow-x-auto rounded-lg border border-slate-200">
-                      <table className="w-full min-w-[500px] text-sm">
-                        <thead className="bg-slate-50 text-xs text-slate-500"><tr><th className="px-3 py-3 text-left font-semibold">Produit</th><th className="px-3 py-3 text-center font-semibold">Quantité</th><th className="px-3 py-3 text-right font-semibold">Prix unitaire</th><th className="px-3 py-3 text-right font-semibold">Sous-total</th></tr></thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {getItems(selectedQuotation).map((item, index) => (
-                            <tr key={item.id || `${item.product_id}-${index}`}>
-                              <td className="px-3 py-3 font-medium text-slate-700">{item.product?.name || item.product_name || `Produit #${item.product_id || "—"}`}</td>
-                              <td className="px-3 py-3 text-center text-slate-600">{item.quantity ?? "—"}</td>
-                              <td className="px-3 py-3 text-right text-slate-600">{formatMoney(item.unit_price)}</td>
-                              <td className="px-3 py-3 text-right font-semibold text-[#0A2540]">{formatMoney(item.subtotal)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
-                  <div><p className="text-xs text-slate-500">Total du devis</p><p className="mt-1 text-xl font-bold text-[#0A2540]">{formatMoney(selectedQuotation.total)}</p></div>
-                  <div className="flex flex-wrap gap-2">
-                    <button type="button" onClick={() => printQuotationDocument(selectedQuotation)} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-amber-50"><Printer size={16} /> Imprimer</button>
-                    <button type="button" onClick={() => openEditForm(selectedQuotation)} className="inline-flex items-center gap-2 rounded-lg bg-[#0A2540] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#123b61]"><Pencil size={16} /> Modifier</button>
-                    <button type="button" onClick={() => setSelectedQuotation(null)} className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50">Fermer</button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* EDIT MODAL */}
-      {showEditForm && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center overflow-y-auto bg-slate-950/60 p-3 sm:p-5 print:hidden">
-          <div className="my-auto w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4 sm:px-7">
-              <div>
-                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-amber-600"><Pencil size={15} /> Modification</div>
-                <h2 className="mt-1 text-xl font-bold text-[#0A2540]">Modifier {getQuotationNumber(editDraft || selectedQuotation)}</h2>
-                <p className="mt-1 text-xs text-amber-700">Les changements sont temporaires et ne seront pas enregistrés dans la base de données.</p>
-              </div>
-              <button type="button" onClick={() => setShowEditForm(false)} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100"><X size={20} /></button>
-            </div>
-
-            {productsLoading ? (
-              <div className="flex items-center justify-center gap-3 py-16 text-sm text-slate-500"><RefreshCw size={18} className="animate-spin" /> Chargement...</div>
-            ) : (
-              <div className="max-h-[70vh] space-y-5 overflow-y-auto p-5 sm:p-7">
-                <div>
-                  <h3 className="mb-3 font-semibold text-[#0A2540]">Ajouter un produit</h3>
-                  <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
-                    <div className="space-y-2">
-                      <input value={editProductSearch} onChange={(event) => setEditProductSearch(event.target.value)} placeholder="Rechercher un produit..." className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-amber-500" />
-                      <select value={editProductId} onChange={(event) => setEditProductId(event.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-amber-500">
-                        <option value="">Sélectionner un produit</option>
-                        {availableEditProducts.map((product) => <option key={product.id} value={product.id}>{getProductName(product)} — {formatMoney(getProductPrice(product))}</option>)}
-                      </select>
-                    </div>
-                    <button type="button" onClick={addEditProduct} disabled={!editProductId} className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#0A2540] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#123b61] disabled:opacity-50"><Plus size={16} /> Ajouter</button>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="mb-3 font-semibold text-[#0A2540]">Produits du devis</h3>
-                  {editItems.length === 0 ? (
-                    <div className="rounded-xl border border-dashed border-slate-300 py-8 text-center text-sm text-slate-500">Aucun produit dans le devis.</div>
-                  ) : (
-                    <div className="overflow-x-auto rounded-xl border border-slate-200">
-                      <table className="w-full min-w-[650px] text-sm">
-                        <thead className="bg-slate-50 text-xs text-slate-500"><tr><th className="px-4 py-3 text-left">Produit</th><th className="px-4 py-3 text-center">Quantité</th><th className="px-4 py-3 text-right">Prix unitaire</th><th className="px-4 py-3 text-right">Sous-total</th><th className="px-4 py-3 text-center">Action</th></tr></thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {editItems.map((item, index) => (
-                            <tr key={`${item.product_id}-${index}`}>
-                              <td className="px-4 py-4 font-medium text-slate-700">{item.product_name}</td>
-                              <td className="px-4 py-4"><input type="number" min="1" value={item.quantity} onChange={(event) => updateEditQuantity(item.product_id, event.target.value)} className="mx-auto block w-20 rounded-md border border-slate-200 px-2 py-2 text-center outline-none focus:border-amber-500" /></td>
-                              <td className="px-4 py-4"><input type="number" min="0" step="0.01" value={item.unit_price} onChange={(event) => updateEditPrice(item.product_id, event.target.value)} className="ml-auto block w-28 rounded-md border border-slate-200 px-2 py-2 text-right outline-none focus:border-amber-500" /></td>
-                              <td className="px-4 py-4 text-right font-semibold text-[#0A2540]">{formatMoney(item.subtotal)}</td>
-                              <td className="px-4 py-4 text-center"><button type="button" onClick={() => removeEditItem(item.product_id)} className="rounded-lg p-2 text-red-500 hover:bg-red-50"><Trash2 size={16} /></button></td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-semibold text-[#0A2540]">Notes / Remarques</label>
-                  <textarea value={editNotes} onChange={(event) => setEditNotes(event.target.value)} rows={3} className="w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-amber-500" placeholder="Notes du devis..." />
-                </div>
-
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-slate-600"><Calculator size={17} /> Nouveau total</div>
-                  <div className="mt-3 flex items-center justify-between"><span className="font-semibold text-[#0A2540]">Total général</span><span className="text-2xl font-bold text-[#0A2540]">{formatMoney(editTotal)}</span></div>
-                </div>
-
-                {editError && <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"><AlertCircle size={17} /> {editError}</div>}
-              </div>
-            )}
-
-            <div className="flex flex-col-reverse gap-2 border-t border-slate-100 px-5 py-4 sm:flex-row sm:justify-end sm:px-7">
-              <button type="button" onClick={() => setShowEditForm(false)} className="rounded-lg border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50">Annuler</button>
-              <button type="button" onClick={saveEditLocally} disabled={productsLoading || !editDraft} className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#0A2540] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#123b61] disabled:opacity-50"><Save size={16} /> Appliquer les modifications</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* PRINT DOCUMENT */}
-      {printQuotation && (
-        <div className="quotation-print-area hidden bg-white p-8 text-slate-900 print:block">
-          <div className="flex items-start justify-between border-b-2 border-[#0A2540] pb-6">
-            <div>
-              <h1 className="text-3xl font-bold tracking-wide text-[#0A2540]">DEVIS</h1>
-              <p className="mt-2 text-sm text-slate-500">Document commercial</p>
-            </div>
-            <div className="text-right">
-              <p className="text-xl font-bold text-[#0A2540]">{getQuotationNumber(printQuotation)}</p>
-              <p className="mt-2 text-sm text-slate-600">Date : {formatDate(printQuotation.created_at)}</p>
-              <p className="mt-1 text-sm text-slate-600">Statut : {statusConfig[printQuotation.status]?.label || "En attente"}</p>
-            </div>
-          </div>
-
-          <div className="mt-8 grid grid-cols-2 gap-8">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Émis par</p>
-              <p className="mt-2 font-semibold text-[#0A2540]">{getCreatorName(printQuotation)}</p>
-            </div>
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Référence du devis</p>
-              <p className="mt-2 font-semibold text-[#0A2540]">{getQuotationNumber(printQuotation)}</p>
-            </div>
-          </div>
-
-          <table className="mt-10 w-full border-collapse text-sm">
-            <thead>
-              <tr className="bg-[#0A2540] text-white">
-                <th className="border border-[#0A2540] px-3 py-3 text-left">Désignation</th>
-                <th className="border border-[#0A2540] px-3 py-3 text-center">Quantité</th>
-                <th className="border border-[#0A2540] px-3 py-3 text-right">Prix unitaire</th>
-                <th className="border border-[#0A2540] px-3 py-3 text-right">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {getItems(printQuotation).map((item, index) => (
-                <tr key={item.id || `${item.product_id}-${index}`}>
-                  <td className="border border-slate-300 px-3 py-3">{item.product?.name || item.product_name || `Produit #${item.product_id || "—"}`}</td>
-                  <td className="border border-slate-300 px-3 py-3 text-center">{item.quantity}</td>
-                  <td className="border border-slate-300 px-3 py-3 text-right">{formatMoney(item.unit_price)}</td>
-                  <td className="border border-slate-300 px-3 py-3 text-right font-semibold">{formatMoney(item.subtotal)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          <div className="mt-6 flex justify-end">
-            <div className="w-72 border-t-2 border-[#0A2540] pt-4">
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-[#0A2540]">TOTAL TTC</span>
-                <span className="text-xl font-bold text-[#0A2540]">{formatMoney(printQuotation.total)}</span>
-              </div>
-            </div>
-          </div>
-
-          {printQuotation.notes && (
-            <div className="mt-10 rounded border border-slate-300 p-4">
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Notes et conditions</p>
-              <p className="mt-2 whitespace-pre-wrap text-sm">{printQuotation.notes}</p>
-            </div>
-          )}
-
-          <div className="mt-20 grid grid-cols-2 gap-10">
-            <div className="border-t border-slate-400 pt-3 text-center text-sm text-slate-600">Signature et cachet</div>
-            <div className="border-t border-slate-400 pt-3 text-center text-sm text-slate-600">Bon pour accord</div>
-          </div>
-
-          <div className="mt-12 border-t border-slate-200 pt-4 text-center text-xs text-slate-500">
-            Merci pour votre confiance.
-          </div>
-
-          <div className="no-print mt-6 flex justify-end gap-2">
-            <button type="button" onClick={() => window.print()} className="inline-flex items-center gap-2 rounded-lg bg-[#0A2540] px-4 py-2.5 text-sm font-semibold text-white"><Printer size={16} /> Imprimer / PDF</button>
-            <button type="button" onClick={() => setPrintQuotation(null)} className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600">Fermer</button>
           </div>
         </div>
       )}

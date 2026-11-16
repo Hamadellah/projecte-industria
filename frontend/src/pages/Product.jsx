@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Check, FileText, Minus, Plus, ShoppingCart } from 'lucide-react'
 import Page from '../components/Page'
 import ProductVisual from '../components/ProductVisual'
@@ -10,11 +10,11 @@ import { useCart } from '../context/CartContext'
 
 export default function Product() {
   const { id } = useParams()
+  const navigate = useNavigate()
   const { add } = useCart()
 
   const [product, setProduct] = useState(null)
   const [related, setRelated] = useState([])
-  const [quotations, setQuotations] = useState([]) 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [qty, setQty] = useState(1)
@@ -27,7 +27,6 @@ export default function Product() {
     setError('')
     setProduct(null)
     setRelated([])
-    setQuotations([])
     setQty(1)
     setAdded(false)
 
@@ -79,22 +78,6 @@ export default function Product() {
         if (!cancelled) setLoading(false)
       })
 
-    // 3. جلب الديڤيسات الحقيقية الخاصة بهذا المنتج من الباك إند (Public بلا توكن)
-    fetch(`http://127.0.0.1:8000/api/client/products/${id}/quotations`, {
-      headers: {
-        Accept: 'application/json',
-      },
-    })
-      .then((res) => (res.ok ? res.json() : Promise.reject(res)))
-      .then((data) => {
-        if (!cancelled && data.quotations) {
-          setQuotations(data.quotations)
-        }
-      })
-      .catch(() => {
-        // في حالة عدم وجود ديڤيسات أو خطأ، يبقى الـ array خاوي
-      })
-
     return () => {
       cancelled = true
     }
@@ -140,6 +123,11 @@ export default function Product() {
     add(product.id, qty)
     setAdded(true)
     window.setTimeout(() => setAdded(false), 2200)
+  }
+
+  // دالة التوجيه لصفحة الديڤيس (تأكد واش الراوت عندك هو /devis ولا /devis-et-contact)
+  const handleRequestQuote = () => {
+    navigate(`/devis?product=${product.id}&qty=${qty}`)
   }
 
   return (
@@ -231,37 +219,17 @@ export default function Product() {
             )}
           </div>
 
-          {/* ========================================================= */}
-          {/* لا يظهر هذا البلوك نهائياً إلا إذا وجد الـ API ديڤيسات حقيقية للمنتج */}
-          {/* ========================================================= */}
-          {quotations.length > 0 && (
-            <div className="mt-8 border border-volt-400/30 bg-navy-800/60 p-5 rounded-xl">
-              <div className="flex items-center gap-2 text-volt-400">
-                <FileText size={20} aria-hidden="true" />
-                <h3 className="font-semibold text-white">
-                  Devis disponible(s) pour ce produit
-                </h3>
-              </div>
-
-              <div className="mt-4 divide-y divide-steel-700/40">
-                {quotations.map((q) => (
-                  <div key={q.id} className="flex flex-wrap items-center justify-between gap-4 py-3 first:pt-0 last:pb-0">
-                    <div>
-                      <p className="text-sm font-medium text-white">{q.quotation_number ?? `Devis #${q.id}`}</p>
-                      <p className="text-xs text-steel-400">Total : {formatPrice(q.total)} • Statut : {q.status}</p>
-                    </div>
-                    <Link
-                      to={`/compte/devis/${q.id}`}
-                      className="inline-flex items-center gap-2 border border-volt-400 px-4 py-2 text-sm font-semibold text-volt-400 transition hover:bg-volt-400 hover:text-navy-950"
-                    >
-                      <FileText size={16} />
-                      Afficher le devis
-                    </Link>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* زر طلب عرض سعر (Demander un devis) */}
+          <div className="mt-4">
+            <button
+              type="button"
+              onClick={handleRequestQuote}
+              className="inline-flex w-full items-center justify-center gap-2 border border-volt-400 bg-navy-800/80 px-6 py-3.5 text-sm font-semibold text-volt-400 transition hover:bg-volt-400 hover:text-navy-950 sm:w-auto"
+            >
+              <FileText size={18} />
+              Demander un devis pour ce produit
+            </button>
+          </div>
 
           <h2 className="display mt-12 text-3xl font-bold text-white">
             Caractéristiques

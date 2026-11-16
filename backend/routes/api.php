@@ -208,3 +208,4 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 // حطها برة الجروب ديال auth:sanctum
 Route::get('/client/products/{productId}/quotations', [QuotationController::class, 'getClientProductQuotations']);
+Route::post('/quotations', [QuotationController::class, 'store']);
