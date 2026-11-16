@@ -20,6 +20,10 @@
   background: #07142b;
 }
 
+/* ==========================================
+   CANVAS IMAGE SEQUENCE
+========================================== */
+
 .cine-images {
   position: absolute;
   inset: 0;
@@ -28,30 +32,26 @@
   background: #07142b;
 }
 
-.cine-image {
-  position: absolute;
-  inset: 0;
+.cine-canvas {
+  display: block;
   width: 100%;
   height: 100%;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  opacity: 0;
-  visibility: hidden;
-  transform: scale(1.1);
-  will-change: opacity, transform;
+  opacity: 1;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  will-change: contents;
 }
 
-.cine-image.is-first {
-  opacity: 1;
-  visibility: visible;
-}
+/* ==========================================
+   DARK OVERLAY / VIGNETTE
+========================================== */
 
 .cine-vignette {
   position: absolute;
   inset: 0;
   z-index: 1;
   pointer-events: none;
+
   background:
     linear-gradient(
       90deg,
@@ -67,6 +67,10 @@
     );
 }
 
+/* ==========================================
+   CONTENT
+========================================== */
+
 .cine-content {
   position: absolute;
   inset: 0;
@@ -74,13 +78,19 @@
   pointer-events: none;
 }
 
+/* ==========================================
+   TOPLINE
+========================================== */
+
 .cine-topline {
   position: absolute;
   top: 27%;
   left: clamp(1.25rem, 7vw, 7rem);
+
   display: flex;
   align-items: center;
   gap: 12px;
+
   color: #9db9df;
   font-size: .72rem;
   font-weight: 700;
@@ -93,13 +103,20 @@
   background: #1e6bff;
 }
 
+/* ==========================================
+   TEXT PANELS
+========================================== */
+
 .cine-panel {
   position: absolute;
   top: 50%;
   left: clamp(1.25rem, 7vw, 7rem);
   right: 12%;
+
   width: min(780px, 75%);
+
   transform: translateY(-50%);
+
   visibility: hidden;
   opacity: 0;
   pointer-events: none;
@@ -114,42 +131,60 @@
 .cine-panel h2 {
   max-width: 850px;
   margin: 0;
+
   color: #fff;
   line-height: .94;
+
   text-shadow: 0 4px 25px rgba(0, 0, 0, .45);
 }
 
 .cine-panel p {
   max-width: 570px;
   margin-top: 1.5rem;
+
   color: rgba(239, 244, 250, .9);
+
   font-size: clamp(1rem, 1.35vw, 1.2rem);
   line-height: 1.75;
+
   text-shadow: 0 2px 12px rgba(0, 0, 0, .6);
 }
 
 .cine-kicker {
   display: block;
   margin-bottom: 1.3rem;
+
   color: #70a7ff;
+
   font-size: .78rem;
   font-weight: 800;
   letter-spacing: .2em;
 }
+
+/* ==========================================
+   CTA
+========================================== */
 
 .cine-cta {
   margin-top: 2rem;
   pointer-events: auto;
 }
 
+/* ==========================================
+   PROGRESS NAVIGATION
+========================================== */
+
 .cine-progress {
   position: absolute;
   z-index: 5;
+
   top: 50%;
   right: clamp(1rem, 3vw, 3rem);
+
   display: flex;
   flex-direction: column;
   gap: 15px;
+
   transform: translateY(-50%);
 }
 
@@ -157,46 +192,68 @@
   width: 10px;
   height: 10px;
   padding: 0;
-  border: 1px solid rgba(255,255,255,.65);
+
+  border: 1px solid rgba(255, 255, 255, .65);
   border-radius: 50%;
+
   background: transparent;
   cursor: pointer;
+
   transition: all .3s ease;
 }
 
 .cine-dot.on {
   border-color: #1e6bff;
   background: #1e6bff;
+
   transform: scale(1.4);
-  box-shadow: 0 0 14px rgba(30,107,255,.6);
+
+  box-shadow: 0 0 14px rgba(30, 107, 255, .6);
 }
+
+/* ==========================================
+   SCROLL HINT
+========================================== */
 
 .scroll-hint {
   position: absolute;
   z-index: 5;
+
   bottom: 2rem;
   left: 50%;
+
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 7px;
-  color: rgba(255,255,255,.75);
+
+  color: rgba(255, 255, 255, .75);
+
   font-size: .68rem;
   font-weight: 600;
   letter-spacing: .18em;
+
   transform: translateX(-50%);
   pointer-events: none;
 }
 
+/* ==========================================
+   COUNTER
+========================================== */
+
 .cine-counter {
   position: absolute;
   z-index: 5;
+
   right: clamp(1.25rem, 5vw, 5rem);
   bottom: 2rem;
+
   display: flex;
   align-items: center;
   gap: 12px;
+
   color: #fff;
+
   font-family: 'Barlow Condensed', sans-serif;
   font-size: 1.1rem;
   font-weight: 700;
@@ -206,18 +263,17 @@
 .cine-counter-divider {
   width: 35px;
   height: 1px;
-  background: rgba(255,255,255,.5);
+  background: rgba(255, 255, 255, .5);
 }
 
-/* Mobile */
+/* ==========================================
+   TABLET & MOBILE
+========================================== */
 
 @media (max-width: 768px) {
+
   .cine-stage {
     min-height: 600px;
-  }
-
-  .cine-image {
-    background-position: 60% center;
   }
 
   .cine-vignette {
@@ -281,7 +337,12 @@
   }
 }
 
+/* ==========================================
+   SMALL MOBILE
+========================================== */
+
 @media (max-width: 480px) {
+
   .cine-stage {
     min-height: 560px;
   }
@@ -297,5 +358,16 @@
 
   .cine-panel p {
     font-size: .9rem;
+  }
+}
+
+/* ==========================================
+   REDUCED MOTION
+========================================== */
+
+@media (prefers-reduced-motion: reduce) {
+
+  .cine-dot {
+    transition: none;
   }
 }

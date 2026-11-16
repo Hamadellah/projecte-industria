@@ -1,0 +1,33 @@
+INDUSTRIA - ENHANCEMENT REPORT
+==============================
+Date: 2026-11-16
+Input : 40 JPG frames, 1280x720 (ezgif-frame-001..040)
+Output: 40 WebP frames, 2560x1440 (2K), quality 92, 16:9, original order kept
+
+PIPELINE (identical settings for all 40 frames, no per-frame adaptation)
+1. Light non-local-means denoise (h=2) to remove JPEG block noise before upscaling.
+2. AI upscaling x2: LapSRN (OpenCV dnn_superres, fixed pretrained weights). Conservative
+   model: it reconstructs edges, does not invent new objects/textures.
+3. Gentle unsharp mask (sigma 1.1, amount 0.45, noise-level detail gated) + very subtle
+   local contrast (sigma 12, amount 0.10). No colour grading, no saturation/HDR change.
+4. WebP export, quality 92.
+No generative model, no cropping, no added/removed objects, no text/logos/watermarks.
+
+QUALITY CONTROL
+- Frames processed: 40/40, none missing, none duplicated.
+- All outputs exactly 2560x1440, WebP, open and decode correctly.
+- Fidelity (enhanced downscaled back to 1280x720 vs original): mean abs diff 2.59/255 (max 3.05) -> geometry/content unchanged.
+- Brightness shift vs original: -0.64 to -0.50 levels (negligible, constant).
+- Sharpness (Laplacian variance) gain: x1.16 average (x1.14 to x1.19) - same on every frame.
+- Temporal consistency: frame-to-frame difference ratio enhanced/original between 1.04 and 1.08
+  on all 39 transitions (flat -> no flicker introduced).
+
+NOTES / LIMITS
+- Frames 13-16 and 29-32 are cross-dissolve transitions already present in the source
+  (two scenes blended). They were preserved as-is, not "fixed".
+- Real gain is moderate (about x1.15 sharpness): the source is 1280x720 with JPEG
+  compression and some AI-style softness, so details cannot be truly recovered; the
+  fidelity-first rule was respected over aggressive enhancement.
+- No frame needed to be left un-enhanced; no visible distortion detected in contact sheet
+  or the zoom comparison. Large smooth sky areas are the only place worth a 100% look.
+- Total size of 40 WebP files: 23.0 MB.
