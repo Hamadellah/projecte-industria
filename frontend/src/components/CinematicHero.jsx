@@ -8,174 +8,285 @@ import { scenes } from '../data/scenes'
 
 gsap.registerPlugin(ScrollTrigger)
 
-const HERO_IMAGES = [
-  'https://www.maadialna.ma/sites/default/files/2023-06/whatsapp-image-2023-06-30-at-19.12.41.jpeg',
-  'https://image.made-in-china.com/2f0j00BOnbTkQPfCcq/Crawler-Drilling-Rig-Water-Well-Drilling-Rig-Machine-Driven-by-Diesel-Engine.jpg',
-  'https://www.jcdrill.com/data/watermark/20230623/649546825a428.jpg',
-  'https://cloudfront-eu-central-1.images.arcpublishing.com/le360/ST4F5EWH7FH4HA36TWATUL64JA.jpg',
-  'https://assets.zyrosite.com/cdn-cgi/image/format%3Dauto%2Cw%3D1920%2Cfit%3Dcrop/m2WEnJ6vy0U04bqp/chatgpt-image-jul-19-2025-07_03_01-pm-YrDJw66OvlHV4nng.png',
-]
+// Load all 40 WebP frames
+const imageModules = import.meta.glob(
+  '../images/ezgif-frame-*.webp',
+  {
+    eager: true,
+    query: '?url',
+    import: 'default',
+  }
+)
+
+// Sort frames by their number
+const frames = Object.entries(imageModules)
+  .sort((a, b) => {
+    const numberA = Number(a[0].match(/(\d+)\.webp$/)?.[1] || 0)
+    const numberB = Number(b[0].match(/(\d+)\.webp$/)?.[1] || 0)
+
+    return numberA - numberB
+  })
+  .map(([, imageUrl]) => imageUrl)
 
 export default function CinematicHero() {
   const sectionRef = useRef(null)
-  const stageRef = useRef(null)
+  const canvasRef = useRef(null)
+  const panelsRef = useRef([])
   const [active, setActive] = useState(0)
 
   useEffect(() => {
+    if (!frames.length || !scenes.length) return
+
     const section = sectionRef.current
-    const stage = stageRef.current
+    const canvas = canvasRef.current
+    const panels = panelsRef.current.filter(Boolean)
 
-    if (!section || !stage) return
+    if (!section || !canvas || !panels.length) return
 
-    const images = gsap.utils.toArray('.cine-image', stage)
-    const panels = gsap.utils.toArray('.cine-panel', stage)
+    let cancelled = false
+    let resizeObserver
+    let context
 
-    if (!images.length || !panels.length) return
+    const ctx = canvas.getContext('2d', {
+      alpha: false,
+    })
 
-    const reducedMotion = window.matchMedia(
-      '(prefers-reduced-motion: reduce)'
-    ).matches
+    if (!ctx) return
 
-    if (reducedMotion) {
-      gsap.set(images, { autoAlpha: 0 })
-      gsap.set(images[0], { autoAlpha: 1, scale: 1 })
+    const loadedImages = []
 
-      gsap.set(panels, { autoAlpha: 0 })
-      gsap.set(panels[0], { autoAlpha: 1 })
+    // Draw one frame with cover behavior
+    const drawFrame = (frameIndex) => {
+      const img = loadedImages[frameIndex]
 
-      return
-    }
+      if (!img || !img.complete) return
 
-    const ctx = gsap.context(() => {
-      gsap.set(images, {
-        autoAlpha: 0,
-        scale: 1.12,
-      })
+      const rect = canvas.getBoundingClientRect()
 
-      gsap.set(images[0], {
-        autoAlpha: 1,
-        scale: 1,
-      })
+      if (!rect.width || !rect.height) return
 
-      gsap.set(panels, {
-        autoAlpha: 0,
-        y: 35,
-      })
+      const dpr = Math.min(window.devicePixelRatio || 1, 2)
 
-      gsap.set(panels[0], {
-        autoAlpha: 1,
-        y: 0,
-      })
+      const width = Math.round(rect.width * dpr)
+      const height = Math.round(rect.height * dpr)
 
-      const timeline = gsap.timeline({
-        scrollTrigger: {
-          id: 'industria-hero',
-          trigger: section,
-          pin: stage,
-          start: 'top top',
-          end: '+=450%',
-          scrub: 1,
-          anticipatePin: 1,
-          invalidateOnRefresh: true,
-
-          onUpdate: (self) => {
-            const index = Math.min(
-              scenes.length - 1,
-              Math.round(self.progress * (scenes.length - 1))
-            )
-
-            setActive((current) =>
-              current === index ? current : index
-            )
-          },
-        },
-      })
-
-      for (let i = 1; i < scenes.length; i++) {
-        const position = i - 1
-
-        // Image précédente
-        timeline.to(
-          images[i - 1],
-          {
-            autoAlpha: 0,
-            scale: 1.1,
-            duration: 0.55,
-            ease: 'power2.inOut',
-          },
-          position
-        )
-
-        // Image suivante
-        timeline.to(
-          images[i],
-          {
-            autoAlpha: 1,
-            scale: 1,
-            duration: 0.8,
-            ease: 'power2.out',
-          },
-          position
-        )
-
-        // Texte précédent
-        timeline.to(
-          panels[i - 1],
-          {
-            autoAlpha: 0,
-            y: -25,
-            duration: 0.3,
-            ease: 'power2.in',
-          },
-          position
-        )
-
-        // Nouveau texte
-        timeline.fromTo(
-          panels[i],
-          {
-            autoAlpha: 0,
-            y: 30,
-          },
-          {
-            autoAlpha: 1,
-            y: 0,
-            duration: 0.55,
-            ease: 'power2.out',
-          },
-          position + 0.2
-        )
+      if (canvas.width !== width || canvas.height !== height) {
+        canvas.width = width
+        canvas.height = height
       }
 
-      // Rafraîchir ScrollTrigger après le chargement des polices
-      document.fonts?.ready?.then(() => {
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+      ctx.imageSmoothingEnabled = true
+      ctx.imageSmoothingQuality = 'high'
+
+      const canvasWidth = rect.width
+      const canvasHeight = rect.height
+
+      const imageWidth = img.naturalWidth
+      const imageHeight = img.naturalHeight
+
+      const scale = Math.max(
+        canvasWidth / imageWidth,
+        canvasHeight / imageHeight
+      )
+
+      const sourceWidth = canvasWidth / scale
+      const sourceHeight = canvasHeight / scale
+
+      // Mobile focal point: 60%, desktop: center
+      const focalX = window.innerWidth <= 768 ? 0.6 : 0.5
+
+      const sourceX = Math.max(
+        0,
+        Math.min(
+          imageWidth - sourceWidth,
+          (imageWidth - sourceWidth) * focalX
+        )
+      )
+
+      const sourceY = (imageHeight - sourceHeight) / 2
+
+      ctx.clearRect(0, 0, canvasWidth, canvasHeight)
+
+      ctx.drawImage(
+        img,
+        sourceX,
+        sourceY,
+        sourceWidth,
+        sourceHeight,
+        0,
+        0,
+        canvasWidth,
+        canvasHeight
+      )
+    }
+
+    const loadImages = async () => {
+      try {
+        // Load and decode all frames before starting animation
+        await Promise.all(
+          frames.map(async (src, index) => {
+            const img = new Image()
+
+            img.src = src
+
+            await new Promise((resolve, reject) => {
+              img.onload = resolve
+              img.onerror = reject
+            })
+
+            if (img.decode) {
+              try {
+                await img.decode()
+              } catch {
+                // Image is already loaded; continue
+              }
+            }
+
+            loadedImages[index] = img
+          })
+        )
+
+        if (cancelled) return
+
+        // Show first frame
+        drawFrame(0)
+
+        context = gsap.context(() => {
+          const frameState = { value: 0 }
+          const duration = Math.max(1, scenes.length - 1)
+
+          gsap.set(panels, {
+            autoAlpha: 0,
+            y: 30,
+          })
+
+          gsap.set(panels[0], {
+            autoAlpha: 1,
+            y: 0,
+          })
+
+          const timeline = gsap.timeline({
+            scrollTrigger: {
+              id: 'industria-hero',
+              trigger: section,
+              pin: '.cine-stage',
+              start: 'top top',
+              end: '+=400%',
+              scrub: 0.7,
+              anticipatePin: 1,
+              invalidateOnRefresh: true,
+
+              onUpdate: (self) => {
+                const sceneIndex = Math.min(
+                  scenes.length - 1,
+                  Math.round(self.progress * (scenes.length - 1))
+                )
+
+                setActive((current) =>
+                  current === sceneIndex ? current : sceneIndex
+                )
+              },
+            },
+          })
+
+          // Scroll-controlled image sequence
+          timeline.to(
+            frameState,
+            {
+              value: loadedImages.length - 1,
+              duration,
+              ease: 'none',
+
+              onUpdate: () => {
+                drawFrame(
+                  Math.round(frameState.value)
+                )
+              },
+            },
+            0
+          )
+
+          // Text transitions
+          scenes.forEach((scene, index) => {
+            if (index === 0) return
+
+            const position = (index / scenes.length) * duration
+
+            timeline.to(
+              panels[index - 1],
+              {
+                autoAlpha: 0,
+                y: -25,
+                duration: 0.22,
+                ease: 'power1.in',
+              },
+              position - 0.15
+            )
+
+            timeline.fromTo(
+              panels[index],
+              {
+                autoAlpha: 0,
+                y: 25,
+              },
+              {
+                autoAlpha: 1,
+                y: 0,
+                duration: 0.32,
+                ease: 'power2.out',
+              },
+              position
+            )
+          })
+        }, section)
+
+        // Redraw on resize
+        resizeObserver = new ResizeObserver(() => {
+          const trigger = ScrollTrigger.getById('industria-hero')
+
+          if (trigger) {
+            const progress = trigger.progress
+            const currentFrame = Math.round(
+              progress * (loadedImages.length - 1)
+            )
+
+            drawFrame(currentFrame)
+          } else {
+            drawFrame(0)
+          }
+
+          ScrollTrigger.refresh()
+        })
+
+        resizeObserver.observe(canvas)
+
         ScrollTrigger.refresh()
-      })
-    }, section)
+      } catch (error) {
+        console.error('INDUSTRIA image sequence loading error:', error)
+      }
+    }
 
-    const refresh = () => ScrollTrigger.refresh()
-
-    window.addEventListener('load', refresh)
+    loadImages()
 
     return () => {
-      window.removeEventListener('load', refresh)
-      ctx.revert()
-      ScrollTrigger.getById('industria-hero')?.kill()
+      cancelled = true
+
+      resizeObserver?.disconnect()
+      context?.revert()
     }
   }, [])
 
+  // Navigate to a scene
   const goToScene = (index) => {
     const trigger = ScrollTrigger.getById('industria-hero')
 
     if (!trigger) return
 
-    const progress = index / (scenes.length - 1)
-
-    const target =
-      trigger.start + progress * (trigger.end - trigger.start)
+    const progress = index / Math.max(1, scenes.length - 1)
 
     window.scrollTo({
-      top: target,
+      top: trigger.start + progress * (trigger.end - trigger.start),
       behavior: 'smooth',
     })
   }
@@ -186,109 +297,87 @@ export default function CinematicHero() {
       className="cine-section"
       aria-label="Présentation INDUSTRIA"
     >
-      <div ref={stageRef} className="cine-stage">
+      <div className="cine-stage">
 
-        {/* Background image reel */}
-        <div className="cine-images" aria-hidden="true">
-          {HERO_IMAGES.map((src, index) => (
-            <div
-              key={src}
-              className={`cine-image ${
-                index === 0 ? 'is-first' : ''
-              }`}
-              style={{
-                backgroundImage: `url("${src}")`,
-              }}
-            />
-          ))}
+        {/* Canvas image sequence */}
+        <div className="cine-images">
+          <canvas
+            ref={canvasRef}
+            className="cine-canvas"
+            role="img"
+            aria-label="Machine de forage INDUSTRIA"
+          />
         </div>
 
-        {/* Cinematic overlay */}
-        <div className="cine-vignette" aria-hidden="true" />
+        <div className="cine-vignette" />
 
-        {/* Main content */}
+        {/* Content */}
         <div className="cine-content">
 
           <div className="cine-topline">
             <span className="cine-line" />
-            <span>INDUSTRIA · EXPERTISE FORAGE</span>
+            <span>INDUSTRIA — EXPERTISE EN FORAGE</span>
           </div>
 
           {scenes.map((scene, index) => (
-            <article
+            <div
               key={scene.id}
-              className={`cine-panel ${
-                index === 0 ? 'is-first' : ''
-              }`}
-              aria-hidden={active !== index}
+              ref={(element) => {
+                panelsRef.current[index] = element
+              }}
+              className={`cine-panel ${index === 0 ? 'is-first' : ''}`}
             >
               <span className="cine-kicker">
-                25 ANS D'EXPÉRIENCE
+                0{index + 1} / 0{scenes.length}
               </span>
 
               {index === 0 ? (
-                <h1 className="display hero-title text-white">
+                <h1 className="display hero-title">
                   {scene.title}
                 </h1>
               ) : (
-                <h2 className="display scene-title text-white">
+                <h2 className="display scene-title">
                   {scene.title}
                 </h2>
               )}
 
-              <p className="cine-description">
-                {scene.text}
-              </p>
+              <p>{scene.text}</p>
 
               {scene.cta && (
-                <Link
-                  to="/catalogue"
-                  className="btn-volt cine-cta"
-                >
+                <Link to="/catalogue" className="btn-volt cine-cta">
                   {scene.cta}
-                  <ArrowRight size={19} aria-hidden="true" />
+                  <ArrowRight size={20} aria-hidden="true" />
                 </Link>
               )}
-            </article>
+            </div>
           ))}
         </div>
 
-        {/* Scene progress */}
-        <div
-          className="cine-progress"
-          aria-label="Étapes de présentation"
-        >
+        {/* Progress navigation */}
+        <div className="cine-progress">
           {scenes.map((scene, index) => (
             <button
               key={scene.id}
               type="button"
-              className={`cine-dot ${
-                active === index ? 'on' : ''
-              }`}
+              className={`cine-dot ${active === index ? 'on' : ''}`}
               onClick={() => goToScene(index)}
-              aria-label={`Aller à l'étape ${index + 1}`}
-              aria-current={
-                active === index ? 'step' : undefined
-              }
+              aria-label={`Aller à la scène ${index + 1}`}
+              aria-current={active === index ? 'step' : undefined}
             />
           ))}
         </div>
 
-        {/* Scroll indicator */}
+        {/* Scroll hint */}
         <div className="scroll-hint">
-          <span>FAITES DÉFILER</span>
-          <ChevronDown
-            className="nudge"
-            size={22}
-            aria-hidden="true"
-          />
+          <span>SCROLL POUR EXPLORER</span>
+          <ChevronDown size={18} />
         </div>
 
         {/* Counter */}
-        <div className="cine-counter" aria-live="polite">
-          <span>0{active + 1}</span>
+        <div className="cine-counter">
+          <span>{String(active + 1).padStart(2, '0')}</span>
           <span className="cine-counter-divider" />
-          <span>0{scenes.length}</span>
+          <span>{String(scenes.length).padStart(2, '0')}</span>
         </div>
 
       </div>
