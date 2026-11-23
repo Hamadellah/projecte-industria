@@ -4,6 +4,7 @@ import { ArrowLeft, CheckCircle, FileText, Send } from 'lucide-react'
 import Page from '../components/Page'
 import { getStoreProduct } from '../services/storeService'
 import { formatPrice } from '../data/products'
+import { apiRequest } from '../services/api' // تأكد من المسار الحقيقي لـ api.js
 
 export default function Devis() {
   const [searchParams] = useSearchParams()
@@ -37,7 +38,7 @@ export default function Devis() {
           setProduct(data)
         })
         .catch((err) => {
-          console.error("Erreur chargement produit pour devis:", err)
+          console.error('Erreur chargement produit pour devis:', err)
         })
         .finally(() => {
           setLoadingProduct(false)
@@ -51,13 +52,11 @@ export default function Devis() {
     setFormData({ ...formData, [e.target.name]: e.target.value })
   }
 
-  // إرسال طلب الديڤيس للـ Backend
-  const handleSubmit = (e) => {
+  // إرسال طلب الديڤيس للـ Backend عبر apiRequest
+  const handleSubmit = async (e) => {
     e.preventDefault()
     setSubmitting(true)
     setError('')
-
-    const token = localStorage.getItem('token')
 
     const payload = {
       product_id: productId ? Number(productId) : null,
@@ -69,26 +68,18 @@ export default function Devis() {
       notes: formData.notes,
     }
 
-    fetch('http://127.0.0.1:8000/api/quotations', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      body: JSON.stringify(payload),
-    })
-      .then((res) => (res.ok ? res.json() : res.json().then((err) => Promise.reject(err))))
-      .then(() => {
-        setSuccess(true)
+    try {
+      await apiRequest('/quotations', {
+        method: 'POST',
+        body: JSON.stringify(payload),
       })
-      .catch((err) => {
-        console.error('Erreur :', err)
-        setError(err.message || 'Une erreur est survenue lors de l\'envoi de votre demande.')
-      })
-      .finally(() => {
-        setSubmitting(false)
-      })
+      setSuccess(true)
+    } catch (err) {
+      console.error('Erreur :', err)
+      setError(err.message || "Une erreur est survenue lors de l'envoi de votre demande.")
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   if (success) {
@@ -125,7 +116,7 @@ export default function Devis() {
         Retour
       </button>
 
-      <div className="mt-8 max-w-3xl mx-auto">
+      <div className="mx-auto mt-8 max-w-3xl">
         <div className="flex items-center gap-3 border-b border-steel-700/60 pb-5">
           <FileText className="text-volt-400" size={32} />
           <div>
@@ -136,23 +127,23 @@ export default function Devis() {
 
         {/* إيلا كان المنتج محدد، كيبان الملخص ديالو الفوق */}
         {productId && (
-          <div className="mt-6 border border-volt-400/30 bg-navy-800/60 p-4 rounded-xl flex items-center gap-4">
+          <div className="mt-6 flex items-center gap-4 rounded-xl border border-volt-400/30 bg-navy-800/60 p-4">
             {loadingProduct ? (
-              <p className="text-steel-400 text-sm">Chargement du produit...</p>
+              <p className="text-sm text-steel-400">Chargement du produit...</p>
             ) : product ? (
               <div className="flex-1">
-                <span className="text-xs text-volt-400 font-semibold uppercase tracking-wider">Produit concerné</span>
-                <h3 className="text-white font-medium text-lg">{product.name}</h3>
+                <span className="text-xs font-semibold uppercase tracking-wider text-volt-400">Produit concerné</span>
+                <h3 className="text-lg font-medium text-white">{product.name}</h3>
                 <p className="text-xs text-steel-400">Réf: {product.reference} • Prix unitaire: {formatPrice(product.price)}</p>
               </div>
             ) : (
-              <p className="text-red-400 text-sm">Produit introuvable.</p>
+              <p className="text-sm text-red-400">Produit introuvable.</p>
             )}
           </div>
         )}
 
         {error && (
-          <div className="mt-6 border border-red-500/40 bg-red-950/40 p-4 text-red-300 text-sm rounded-lg">
+          <div className="mt-6 rounded-lg border border-red-500/40 bg-red-950/40 p-4 text-sm text-red-300">
             {error}
           </div>
         )}
@@ -167,7 +158,7 @@ export default function Devis() {
                 required
                 value={formData.name}
                 onChange={handleChange}
-                className="mt-1 w-full bg-navy-900 border border-steel-700 rounded-lg px-4 py-3 text-white focus:border-volt-400 focus:outline-none"
+                className="mt-1 w-full rounded-lg border border-steel-700 bg-navy-900 px-4 py-3 text-white focus:border-volt-400 focus:outline-none"
                 placeholder="Votre nom"
               />
             </div>
@@ -180,7 +171,7 @@ export default function Devis() {
                 required
                 value={formData.email}
                 onChange={handleChange}
-                className="mt-1 w-full bg-navy-900 border border-steel-700 rounded-lg px-4 py-3 text-white focus:border-volt-400 focus:outline-none"
+                className="mt-1 w-full rounded-lg border border-steel-700 bg-navy-900 px-4 py-3 text-white focus:border-volt-400 focus:outline-none"
                 placeholder="email@exemple.com"
               />
             </div>
@@ -193,7 +184,7 @@ export default function Devis() {
                 required
                 value={formData.phone}
                 onChange={handleChange}
-                className="mt-1 w-full bg-navy-900 border border-steel-700 rounded-lg px-4 py-3 text-white focus:border-volt-400 focus:outline-none"
+                className="mt-1 w-full rounded-lg border border-steel-700 bg-navy-900 px-4 py-3 text-white focus:border-volt-400 focus:outline-none"
                 placeholder="+212 6..."
               />
             </div>
@@ -205,7 +196,7 @@ export default function Devis() {
                 name="company"
                 value={formData.company}
                 onChange={handleChange}
-                className="mt-1 w-full bg-navy-900 border border-steel-700 rounded-lg px-4 py-3 text-white focus:border-volt-400 focus:outline-none"
+                className="mt-1 w-full rounded-lg border border-steel-700 bg-navy-900 px-4 py-3 text-white focus:border-volt-400 focus:outline-none"
                 placeholder="Votre société"
               />
             </div>
@@ -221,7 +212,7 @@ export default function Devis() {
                 required
                 value={formData.quantity}
                 onChange={handleChange}
-                className="mt-1 w-full bg-navy-900 border border-steel-700 rounded-lg px-4 py-3 text-white focus:border-volt-400 focus:outline-none"
+                className="mt-1 w-full rounded-lg border border-steel-700 bg-navy-900 px-4 py-3 text-white focus:border-volt-400 focus:outline-none"
               />
             </div>
           </div>
@@ -233,7 +224,7 @@ export default function Devis() {
               rows="4"
               value={formData.notes}
               onChange={handleChange}
-              className="mt-1 w-full bg-navy-900 border border-steel-700 rounded-lg px-4 py-3 text-white focus:border-volt-400 focus:outline-none"
+              className="mt-1 w-full rounded-lg border border-steel-700 bg-navy-900 px-4 py-3 text-white focus:border-volt-400 focus:outline-none"
               placeholder="Précisez vos besoins spécifiques..."
             ></textarea>
           </div>
@@ -241,7 +232,7 @@ export default function Devis() {
           <button
             type="submit"
             disabled={submitting}
-            className="btn-volt w-full py-4 flex items-center justify-center gap-2 text-base font-semibold disabled:opacity-50"
+            className="btn-volt flex w-full items-center justify-center gap-2 py-4 text-base font-semibold disabled:opacity-50"
           >
             <Send size={18} />
             {submitting ? 'Envoi en cours...' : 'Envoyer la demande de devis'}
