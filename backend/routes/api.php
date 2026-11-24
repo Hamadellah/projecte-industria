@@ -19,6 +19,7 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\api\AuthController;
 
 // Store Controllers
+use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\OrderController;
@@ -26,22 +27,24 @@ use App\Http\Controllers\QuotationController;
 
 
 // ========================================
-// Routes publiques
+// Public Routes
 // ========================================
 
 Route::post('/register', [RegisterController::class, 'register']);
 
 Route::post('/login', [LoginController::class, 'login']);
 
-Route::get('/categories', [AdminCategoryController::class, 'index']);
+// Public categories
+Route::get('/categories', [CategoryController::class, 'index']);
 
+// Public products
 Route::get('/products', [ProductController::class, 'index']);
 
 Route::get('/products/{product}', [ProductController::class, 'show']);
 
 
 // ========================================
-// Routes Admin
+// Admin Routes
 // ========================================
 
 Route::middleware(['auth:sanctum', 'admin'])
@@ -54,16 +57,16 @@ Route::middleware(['auth:sanctum', 'admin'])
             'index'
         ]);
 
-        // Categories
+        // Categories CRUD
         Route::apiResource('categories', AdminCategoryController::class);
 
-        // Products
+        // Products CRUD
         Route::apiResource('products', AdminProductController::class);
 
-        // Suppliers
+        // Suppliers CRUD
         Route::apiResource('suppliers', AdminSupplierController::class);
 
-        // Quotations
+        // Quotations CRUD
         Route::apiResource('quotations', AdminQuotationController::class);
 
         Route::patch('/quotations/{id}/status', [
@@ -127,15 +130,12 @@ Route::middleware(['auth:sanctum', 'admin'])
 
 
 // ========================================
-// Routes Client / User
+// Authenticated Client / User Routes
 // ========================================
 
 Route::middleware('auth:sanctum')->group(function () {
 
-    // ====================================
     // User Management
-    // ====================================
-
     Route::get('/user', [
         AuthController::class,
         'user'
@@ -146,11 +146,7 @@ Route::middleware('auth:sanctum')->group(function () {
         'logout'
     ]);
 
-
-    // ====================================
     // Cart Management
-    // ====================================
-
     Route::get('/cart', [
         CartController::class,
         'index'
@@ -161,7 +157,6 @@ Route::middleware('auth:sanctum')->group(function () {
         'store'
     ]);
 
-    // Guest Cart Synchronization
     Route::post('/cart/sync', [
         CartController::class,
         'sync'
@@ -182,30 +177,34 @@ Route::middleware('auth:sanctum')->group(function () {
         'clear'
     ]);
 
-
-    // ====================================
     // Orders Management
-    // ====================================
-
-    // Create a new order
     Route::post('/orders', [
         OrderController::class,
         'store'
     ]);
 
-    // Get all orders of authenticated user
     Route::get('/orders', [
         OrderController::class,
         'index'
     ]);
 
-    // Get details of a specific order
     Route::get('/orders/{id}', [
         OrderController::class,
         'show'
     ]);
-
 });
-// حطها برة الجروب ديال auth:sanctum
-Route::get('/client/products/{productId}/quotations', [QuotationController::class, 'getClientProductQuotations']);
-Route::post('/quotations', [QuotationController::class, 'store']);
+
+
+// ========================================
+// Client Product Quotations
+// ========================================
+
+Route::get('/client/products/{productId}/quotations', [
+    QuotationController::class,
+    'getClientProductQuotations'
+]);
+
+Route::post('/quotations', [
+    QuotationController::class,
+    'store'
+]);
