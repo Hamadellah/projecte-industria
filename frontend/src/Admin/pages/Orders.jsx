@@ -20,6 +20,11 @@ const statusClass = {
   cancelled: "bg-red-50 text-red-700",
 };
 
+const selectStyle = {
+  backgroundColor: "#ffffff",
+  color: "#0f172a",
+};
+
 function unwrapOrder(result) {
   return result?.data?.order || result?.order || result?.data || result;
 }
@@ -119,9 +124,18 @@ export default function Orders() {
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4">
         <div><h2 className="font-semibold text-[#0A2540]">Liste des commandes</h2><p className="mt-1 text-xs text-slate-500">Cliquez sur une commande pour consulter ses détails.</p></div>
         <div className="flex items-center gap-2">
-          <select value={filter} onChange={(e) => setFilter(e.target.value)} className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-amber-500">
-            <option value="">Toutes les commandes</option>
-            {statuses.map((status) => <option key={status} value={status}>{labels[status]}</option>)}
+          <select
+            style={selectStyle}
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-900 outline-none focus:border-amber-500"
+          >
+            <option value="" style={selectStyle}>Toutes les commandes</option>
+            {statuses.map((status) => (
+              <option key={status} value={status} style={selectStyle}>
+                {labels[status]}
+              </option>
+            ))}
           </select>
           <button type="button" onClick={load} aria-label="Actualiser les commandes" className="rounded-lg border border-slate-200 p-2.5 text-slate-600 hover:bg-slate-50"><RefreshCw size={17} /></button>
         </div>
@@ -150,8 +164,18 @@ export default function Orders() {
                     <td className="whitespace-nowrap px-5 py-4 font-semibold text-slate-800">{formatMoney(order.total)}</td>
                     <td className="px-5 py-4"><span className={`whitespace-nowrap rounded-md px-2.5 py-1.5 text-xs font-semibold ${statusClass[order.status] || "bg-slate-100 text-slate-600"}`}>{labels[order.status] || order.status}</span></td>
                     <td className="px-5 py-4">
-                      <select disabled={savingId === order.id} value={order.status} onChange={(e) => changeStatus(order.id, e.target.value)} className="max-w-44 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs outline-none focus:border-amber-500 disabled:opacity-50">
-                        {statuses.map((status) => <option key={status} value={status}>{labels[status]}</option>)}
+                      <select
+                        style={selectStyle}
+                        disabled={savingId === order.id}
+                        value={order.status}
+                        onChange={(e) => changeStatus(order.id, e.target.value)}
+                        className="max-w-44 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs font-medium text-slate-900 outline-none focus:border-amber-500 disabled:opacity-50"
+                      >
+                        {statuses.map((status) => (
+                          <option key={status} value={status} style={selectStyle}>
+                            {labels[status]}
+                          </option>
+                        ))}
                       </select>
                     </td>
                   </tr>
